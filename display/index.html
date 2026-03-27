@@ -20,7 +20,7 @@
             --text-muted: rgba(255,255,255,0.4);
         }
 
-        html { font-size: 125%; }
+        html { font-size: 100%; }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -74,8 +74,8 @@
             display: grid;
             grid-template-columns: 0.8fr 1.5fr 0.9fr;
             grid-template-rows: auto 1fr auto;
-            gap: 18px;
-            padding: 18px 18px 54px;
+            gap: 14px;
+            padding: 14px 14px 45px;
             height: 100vh;
             overflow: hidden;
         }
@@ -158,13 +158,13 @@
             background: var(--glass);
             border: 1px solid var(--glass-border);
             border-radius: 20px;
-            padding: 22px;
+            padding: 14px; /* Reduced from 22px */
             backdrop-filter: blur(20px);
             overflow: hidden;
             display: flex;
             flex-direction: column;
-            gap: 16px;
-            min-height: 0; /* Constraints to allow shrinking in flex/grid */
+            gap: 10px; /* Reduced from 16px */
+            min-height: 0;
         }
 
         .card-header {
@@ -377,8 +377,9 @@
         .center-col {
             display: flex;
             flex-direction: column;
-            gap: 18px;
+            gap: 12px;
             min-height: 0;
+            min-width: 0; /* Important for grid cells */
             overflow: hidden;
         }
 
@@ -633,8 +634,9 @@
         .right-col {
             display: flex;
             flex-direction: column;
-            gap: 18px;
+            gap: 12px;
             min-height: 0;
+            min-width: 0; /* Important for grid cells */
             overflow: hidden;
         }
 
@@ -643,11 +645,11 @@
         }
 
         .daily-notes-content {
-            font-size: 1.8rem;
-            line-height: 1.5;
+            font-size: 1.4rem;
+            line-height: 1.4;
             color: rgba(255,255,255,1);
             white-space: pre-wrap;
-            padding: 20px;
+            padding: 14px;
             font-weight: 800;
             letter-spacing: -0.01em;
             background: rgba(255,255,255,0.02);
@@ -655,8 +657,8 @@
         }
 
         .projects-content {
-            font-size: 1.45rem;
-            line-height: 1.4;
+            font-size: 1.25rem;
+            line-height: 1.3;
             color: rgba(255,255,255,1);
             white-space: pre-wrap;
             padding: 12px;
