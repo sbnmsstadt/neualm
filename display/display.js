@@ -112,7 +112,7 @@ function renderKids() {
             const [,m,d] = s.birthday.split('-').map(Number);
             let bday = new Date(today.getFullYear(), m-1, d);
             if (bday < today) bday = new Date(today.getFullYear()+1, m-1, d);
-            const days = Math.round((bday - today) / 86400000);
+            const days = Math.round((bday.getTime() - today.getTime()) / 86400000);
             return days;
         };
         return getScore(a) - getScore(b);
@@ -127,7 +127,7 @@ function renderKids() {
             isThisWeek = bday >= monday && bday <= sunday;
             dateStr    = `${String(d).padStart(2,'0')}.${String(m).padStart(2,'0')}.`;
             if (bday < today) bday = new Date(today.getFullYear()+1, m-1, d);
-            const days = Math.round((bday - today) / 86400000);
+            const days = Math.round((bday.getTime() - today.getTime()) / 86400000);
             daysLabel  = isToday ? '🎂 HEUTE!' : `in ${days} Tagen`;
         }
         const cls = isToday ? 'today' : isThisWeek ? 'upcoming' : '';
@@ -168,7 +168,7 @@ function renderCountdown() {
             const [,m,d] = s.birthday.split('-').map(Number);
             let bday = new Date(today.getFullYear(), m-1, d);
             if (bday < today) bday = new Date(today.getFullYear()+1, m-1, d);
-            const days = Math.round((bday - today) / 86400000);
+            const days = Math.round((bday.getTime() - today.getTime()) / 86400000);
             return { name: s.name.split(' ')[0], days, isToday: days === 0 };
         })
         .sort((a,b) => a.days - b.days);
@@ -260,7 +260,7 @@ function renderStudentOfTheWeek() {
         if (s.vip.grantedAt) {
             const g = new Date(s.vip.grantedAt);
             g.setHours(0,0,0,0);
-            const diff = Math.floor((today - g) / 86400000) + 1;
+            const diff = Math.floor((today.getTime() - g.getTime()) / 86400000) + 1;
             const left = duration - diff + 1;
             dayText = left <= 1 ? '🔴 Letzter Tag!' : `Tag ${diff} / ${duration}`;
         }

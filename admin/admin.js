@@ -431,7 +431,7 @@ function renderAdminList(filter = "") {
             grantedDate.setHours(0,0,0,0);
             const today = new Date();
             today.setHours(0,0,0,0);
-            const daysDiff = Math.floor((today - grantedDate) / (1000 * 60 * 60 * 24)) + 1;
+            const daysDiff = Math.floor((today.getTime() - grantedDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
             const vipDuration = window._vipDuration || 7;
             const daysLeft = vipDuration - daysDiff + 1;
             vipDayText = daysLeft <= 1 

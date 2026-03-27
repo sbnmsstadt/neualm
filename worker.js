@@ -462,7 +462,7 @@ export default {
                 if (s.vip && s.vip.active && s.vip.grantedAt) {
                     const grantedDate = new Date(s.vip.grantedAt);
                     grantedDate.setHours(0,0,0,0);
-                    const daysDiff = Math.floor((today - grantedDate) / (1000 * 60 * 60 * 24)) + 1;
+                    const daysDiff = Math.floor((today.getTime() - grantedDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
                     const daysLeft = vipDuration - daysDiff + 1;
 
                     if (daysLeft <= 0) {

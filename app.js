@@ -747,7 +747,7 @@ function calculateStreak(history) {
     
     // Check if last stamp was today or yesterday
     const lastDate = dates[dates.length - 1];
-    const diffToToday = (parse(todayStr) - parse(lastDate)) / (1000 * 60 * 60 * 24);
+    const diffToToday = (parse(todayStr).getTime() - parse(lastDate).getTime()) / (1000 * 60 * 60 * 24);
     
     if (diffToToday > 1) return 0; // Streak broken
 
@@ -755,7 +755,7 @@ function calculateStreak(history) {
     let checkDate = parse(lastDate);
     for (let i = dates.length - 1; i >= 0; i--) {
         const d = parse(dates[i]);
-        const diff = (checkDate - d) / (1000 * 60 * 60 * 24);
+        const diff = (checkDate.getTime() - d.getTime()) / (1000 * 60 * 60 * 24);
         
         if (diff === 0) {
             streak++;
