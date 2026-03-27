@@ -31,14 +31,43 @@ export default {
                     { threshold: 60, icon: "👑", title: "Level 3: VIP Woche", desc: "Entscheide über die Spiele!" }
                 ];
 
+            // Admin Login Verification
+            if (path === "/api/admin/login" && method === "POST") {
+                const { password } = await request.json();
+                const correctPassword = env.ADMIN_PW || "8520"; // Fallback to old PIN if secret not set
+                
+                if (password === correctPassword) {
+                    return new Response(JSON.stringify({ success: true }), {
+                        headers: { ...corsHeaders, "Content-Type": "application/json" }
+                    });
+                } else {
+                    return new Response(JSON.stringify({ success: false, message: "Falsches Passwort" }), {
+                        status: 401,
+                        headers: { ...corsHeaders, "Content-Type": "application/json" }
+                    });
+                }
+            }
+
             // DEBUG: Test Telegram
             if (path === "/api/debug/test-telegram") {
+                const sendTelegramMessage = async (env, text) => {
+                    const token = env.TELEGRAM_TOKEN;
+                    const chatId = env.TELEGRAM_CHAT_ID;
+                    if (!token || !chatId) return false;
+                    const url = `https://api.telegram.org/bot${token}/sendMessage`;
+                    const res = await fetch(url, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ chat_id: chatId, text: text })
+                    });
+                    return res.ok;
+                };
+
                 const success = await sendTelegramMessage(env, "Test-Nachricht vom Stempelkarten-System! ✅\n\nDein Bot ist richtig konfiguriert.");
                 return new Response(JSON.stringify({ success, message: success ? "Test gesendet!" : "Fehler beim Senden. Prüfe deine Secrets!" }), {
                     headers: { ...corsHeaders, "Content-Type": "application/json" }
                 });
             }
-
             if (path === "/api/settings" && method === "GET") {
                 const settingsRaw = await env.DATABASE.get("settings");
                 const defaultActivities = [

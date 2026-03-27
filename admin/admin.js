@@ -10,8 +10,42 @@ const adminApp = document.getElementById('admin-app');
 const loginOverlay = document.getElementById('login-overlay');
 
 // Simple PIN protection for Admin Dashboard
-function checkAuth() {
-    if (sessionStorage.getItem('admin_auth') === PIN_ADMIN) {
+async function verifyAdminPin() {
+    const input = document.getElementById('admin-pin-input');
+    const password = input.value;
+    
+    try {
+        const response = await fetch(`${API_URL}/admin/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password })
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            if (data.success) {
+                // Use a different key to distinguish from old PIN
+                sessionStorage.setItem('admin_auth_v2', password);
+                checkAuthV2();
+            } else {
+                alert("Falscher PIN / Passwort!");
+                input.value = "";
+                input.focus();
+            }
+        } else {
+            alert("Login fehlgeschlagen. Passwort prüfen.");
+            input.value = "";
+            input.focus();
+        }
+    } catch (err) {
+        alert("Verbindung zum Server fehlgeschlagen.");
+    }
+}
+
+// Updated auth check for v2
+function checkAuthV2() {
+    const auth = sessionStorage.getItem('admin_auth_v2');
+    if (auth) {
         if (loginOverlay) loginOverlay.style.display = 'none';
         if (adminApp) adminApp.style.display = 'block';
     } else {
@@ -21,19 +55,7 @@ function checkAuth() {
     }
 }
 
-function verifyAdminPin() {
-    const input = document.getElementById('admin-pin-input');
-    if (input.value === PIN_ADMIN) {
-        sessionStorage.setItem('admin_auth', PIN_ADMIN);
-        checkAuth();
-    } else {
-        alert("Falscher PIN!");
-        input.value = "";
-        input.focus();
-    }
-}
-
-checkAuth();
+checkAuthV2();
 
 document.addEventListener('DOMContentLoaded', async () => {
     await fetchRewards();
