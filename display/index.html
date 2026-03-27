@@ -164,6 +164,7 @@
             display: flex;
             flex-direction: column;
             gap: 16px;
+            min-height: 0; /* Constraints to allow shrinking in flex/grid */
         }
 
         .card-header {
@@ -185,11 +186,12 @@
 
         .card-content {
             flex: 1;
-            overflow: hidden;
+            overflow-y: auto; /* Allow internal scrolling if content is too long */
             display: flex;
             flex-direction: column;
             gap: 10px;
             position: relative;
+            min-height: 0;
         }
 
         /* ── KIDS SCROLL BAND ──────────────────── */
