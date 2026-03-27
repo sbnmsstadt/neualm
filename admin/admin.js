@@ -56,6 +56,10 @@ function checkAuthV2() {
 }
 
 checkAuthV2();
+function setQuickTime(t) {
+    const input = document.getElementById('new-student-departure');
+    if (input) input.value = t;
+}
 
 document.addEventListener('DOMContentLoaded', async () => {
     await fetchRewards();
@@ -462,9 +466,13 @@ function renderAdminList(filter = "") {
         }
 
         const days = student.attendanceDays || [];
-        const dayBadges = ['Mo', 'Di', 'Mi', 'Do', 'Fr'].map(d => 
-            `<span style="font-size:0.65rem; padding:2px 4px; border-radius:4px; background:${days.includes(d) ? 'var(--primary-light)' : 'rgba(255,255,255,0.05)'}; opacity:${days.includes(d) ? '1' : '0.3'}; margin-right:2px;">${d}</span>`
-        ).join('');
+        const dayBadges = ['Mo', 'Di', 'Mi', 'Do', 'Fr'].map(d => {
+            const isActive = days.includes(d);
+            const bg = isActive ? 'white' : 'rgba(255,255,255,0.05)';
+            const color = isActive ? 'var(--primary)' : 'rgba(255,255,255,0.3)';
+            const fw = isActive ? '900' : '500';
+            return `<span style="font-size:0.65rem; padding:2px 4px; border-radius:4px; background:${bg}; color:${color}; font-weight:${fw}; margin-right:2px; border: 1px solid ${isActive ? 'white' : 'transparent'};">${d}</span>`;
+        }).join('');
 
         item.innerHTML = `
             <div class="student-info">

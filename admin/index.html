@@ -76,8 +76,12 @@
                         </div>
 
                         <div class="edit-field">
-                            <label style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">Geht-Zeit (z.B. 16:00)</label>
-                            <input type="text" id="new-student-departure" placeholder="16:00" style="width:100%;">
+                            <label style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">Geht-Zeit</label>
+                            <div style="display:flex; gap:8px; margin-bottom:8px;">
+                                <button type="button" onclick="setQuickTime('15:30')" style="flex:1; background:rgba(255,255,255,0.1); border:1px solid var(--glass-border); color:white; padding:6px; border-radius:8px; cursor:pointer; font-size:0.8rem; font-weight:700;">15:30</button>
+                                <button type="button" onclick="setQuickTime('16:30')" style="flex:1; background:rgba(255,255,255,0.1); border:1px solid var(--glass-border); color:white; padding:6px; border-radius:8px; cursor:pointer; font-size:0.8rem; font-weight:700;">16:30</button>
+                            </div>
+                            <input type="text" id="new-student-departure" placeholder="Oder manuell: 16:00" style="width:100%;">
                         </div>
 
                         <button id="add-btn" class="add-stamp-btn">Hinzufügen</button>
