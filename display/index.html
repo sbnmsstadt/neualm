@@ -860,20 +860,8 @@
             </div>
         </header>
 
-        <!-- Left Column -->
+        <!-- Left: Birthdays -->
         <div class="left-col">
-            <!-- Schüler d. Woche (VIP) -->
-            <div class="card vip-card" style="flex: 0 0 auto;">
-                <div class="card-header">
-                    <div class="card-icon">🏆</div>
-                    <div class="card-title">Schüler d. Woche</div>
-                </div>
-                <div class="card-content" id="vip-list" style="gap: 8px;">
-                    <div class="empty-state"><div class="empty-icon">⭐</div><span>Kein VIP</span></div>
-                </div>
-            </div>
-
-            <!-- Geburtstage -->
             <div class="card birthday-card" style="flex: 1;">
                 <div class="card-header">
                     <div class="card-icon">🎈</div>
@@ -887,21 +875,21 @@
             </div>
         </div>
 
-        <!-- Center -->
+        <!-- Center: Attendance, Plan, Projects -->
         <div class="center-col">
-            <!-- Wichtiges für heute (Daily Notes) -->
-            <div class="card daily-notes-card" style="flex:1;">
+            <!-- Wer ist heute da? (Attendance) -->
+            <div class="card attendance-card" style="flex: 1.8;">
                 <div class="card-header">
-                    <div class="card-icon">📝</div>
-                    <div class="card-title">Wichtiges für heute</div>
+                    <div class="card-icon">👥</div>
+                    <div class="card-title">WER IST HEUTE DA?</div>
                 </div>
-                <div class="card-content daily-notes-content" id="daily-notes-list">
-                    Lade Notizen...
+                <div class="card-content" id="attendance-list" style="overflow-y: auto;">
+                    <div class="empty-state"><span>Wird geladen...</span></div>
                 </div>
             </div>
 
             <!-- Tagesplan -->
-            <div class="card tagesplan-card" style="flex:1;">
+            <div class="card tagesplan-card" style="flex: 1;">
                 <div class="card-header">
                     <div class="card-icon">📅</div>
                     <div class="card-title">TAGESPLAN</div>
@@ -914,7 +902,7 @@
             </div>
 
             <!-- Aktuelle Projekte -->
-            <div class="card projects-card" style="flex:1;">
+            <div class="card projects-card" style="flex: 1;">
                 <div class="card-header">
                     <div class="card-icon">🚀</div>
                     <div class="card-title">AKTUELLE PROJEKTE</div>
@@ -929,7 +917,8 @@
 
         <!-- Right: VIP & Daily Notes -->
         <div class="right-col">
-            <div class="card vip-card">
+            <!-- Schüler d. Woche (VIP) -->
+            <div class="card vip-card" style="flex: 0 0 auto;">
                 <div class="card-header">
                     <div class="card-icon">🏆</div>
                     <div class="card-title">Schüler d. Woche</div>
@@ -939,14 +928,14 @@
                 </div>
             </div>
 
-            <!-- Wer ist heute da? (Attendance) -->
-            <div class="card attendance-card" style="flex:2;">
+            <!-- Wichtiges für heute (Daily Notes) -->
+            <div class="card daily-notes-card" style="flex: 1;">
                 <div class="card-header">
-                    <div class="card-icon">👥</div>
-                    <div class="card-title">WER IST HEUTE DA?</div>
+                    <div class="card-icon">📝</div>
+                    <div class="card-title">Wichtiges für heute</div>
                 </div>
-                <div class="card-content" id="attendance-list" style="overflow-y: auto;">
-                    <div class="empty-state"><span>Wird geladen...</span></div>
+                <div class="card-content daily-notes-content" id="daily-notes-list">
+                    Lade Notizen...
                 </div>
             </div>
         </div>
