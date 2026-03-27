@@ -641,13 +641,15 @@
         }
 
         .daily-notes-content {
-            font-size: 1.45rem;
-            line-height: 1.4;
+            font-size: 1.8rem;
+            line-height: 1.5;
             color: rgba(255,255,255,1);
             white-space: pre-wrap;
-            padding: 12px;
+            padding: 20px;
             font-weight: 800;
             letter-spacing: -0.01em;
+            background: rgba(255,255,255,0.02);
+            border-radius: 14px;
         }
 
         .projects-content {
@@ -795,11 +797,16 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 10px 16px;
+            padding: 8px 14px;
             background: rgba(255,255,255,0.04);
             border: 1px solid var(--glass-border);
-            border-radius: 12px;
-            margin-bottom: 8px;
+            border-radius: 10px;
+            margin-bottom: 6px;
+            transition: transform 0.2s;
+        }
+        .attendance-item:hover {
+            background: rgba(255,255,255,0.08);
+            transform: translateX(4px);
         }
         .attendance-name {
             font-size: 1.1rem;
@@ -846,14 +853,14 @@
 
         <!-- Center -->
         <div class="center-col">
-            <!-- Wer ist heute da? (Attendance) -->
-            <div class="card attendance-card" style="flex:1.2;">
+            <!-- Wichtiges für heute (Daily Notes) -->
+            <div class="card daily-notes-card" style="flex:1;">
                 <div class="card-header">
-                    <div class="card-icon">👥</div>
-                    <div class="card-title">WER IST HEUTE DA?</div>
+                    <div class="card-icon">📝</div>
+                    <div class="card-title">Wichtiges für heute</div>
                 </div>
-                <div class="card-content" id="attendance-list">
-                    <div class="empty-state"><span>Wird geladen...</span></div>
+                <div class="card-content daily-notes-content" id="daily-notes-list">
+                    Lade Notizen...
                 </div>
             </div>
 
@@ -896,13 +903,14 @@
                 </div>
             </div>
 
-            <div class="card daily-notes-card" style="flex:1;">
+            <!-- Wer ist heute da? (Attendance) -->
+            <div class="card attendance-card" style="flex:2;">
                 <div class="card-header">
-                    <div class="card-icon">📝</div>
-                    <div class="card-title">Wichtiges für heute</div>
+                    <div class="card-icon">👥</div>
+                    <div class="card-title">WER IST HEUTE DA?</div>
                 </div>
-                <div class="card-content daily-notes-content" id="daily-notes-list">
-                    Lade Notizen...
+                <div class="card-content" id="attendance-list" style="overflow-y: auto;">
+                    <div class="empty-state"><span>Wird geladen...</span></div>
                 </div>
             </div>
         </div>

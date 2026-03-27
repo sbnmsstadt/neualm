@@ -265,7 +265,7 @@ function renderRewardDashboard() {
                         <input type="text" id="edit-reward-icon" value="${editingReward.icon}" style="width:40px">
                     </div>
                     <div class="edit-field">
-                        <label>Stempel</label>
+                        <label>Punkte</label>
                         <div class="threshold-adjuster">
                             <button onclick="adjustEditThreshold(-1)">-</button>
                             <input type="number" id="edit-reward-threshold" value="${editingReward.threshold}" 
@@ -368,7 +368,7 @@ async function saveEditReward() {
     // Check if new threshold already exists elsewhere
     if (newT !== editingReward.oldThreshold) {
         if (REWARDS.some(r => r.threshold === newT)) {
-            alert(`Es gibt bereits eine Belohnung für ${newT} Stempel. Bitte wähle eine andere Anzahl.`);
+            alert(`Es gibt bereits eine Belohnung für ${newT} Punkte. Bitte wähle eine andere Anzahl.`);
             return;
         }
     }
@@ -410,12 +410,12 @@ async function createNewReward() {
     const desc = document.getElementById('new-reward-desc').value;
     
     if (!t || !title) {
-        alert("Bitte Stempelanzahl und Titel eingeben.");
+        alert("Bitte Punktanzahl und Titel eingeben.");
         return;
     }
 
     if (REWARDS.some(r => r.threshold === t)) {
-        alert(`Es gibt bereits eine Belohnung für ${t} Stempel.`);
+        alert(`Es gibt bereits eine Belohnung für ${t} Punkte.`);
         return;
     }
 
