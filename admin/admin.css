@@ -1,0 +1,432 @@
+:root {
+    --primary: hsl(220, 90%, 56%);
+    --primary-light: hsl(220, 90%, 70%);
+    --bg-dark: hsl(222, 47%, 11%);
+    --bg-card: hsla(222, 47%, 15%, 0.8);
+    --text-main: hsl(210, 40%, 98%);
+    --text-muted: hsl(215, 20%, 65%);
+    --accent: hsl(280, 80%, 60%);
+    --success: hsl(142, 70%, 45%);
+    --border: hsla(217, 32%, 17%, 1);
+    --glass-border: hsla(0, 0%, 100%, 0.1);
+    --shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+    line-height: 1.5;
+    min-height: 100vh;
+}
+
+#admin-app {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+header {
+    margin-bottom: 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.admin-title-area h1 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #fff 0%, var(--primary-light) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Dashboard Layout */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: 350px 1fr;
+    gap: 2rem;
+    align-items: start;
+}
+
+@media (max-width: 1024px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Stats Row */
+.stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: var(--bg-card);
+    border: 1px solid var(--glass-border);
+    padding: 1.5rem;
+    border-radius: 24px;
+    display: flex;
+    flex-direction: column;
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--primary-light);
+}
+
+.stat-label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Glass Card */
+.glass-card {
+    background: var(--bg-card);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 28px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.glass-card h3 {
+    margin-bottom: 1rem;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Student Grid */
+.student-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.5rem;
+}
+
+.admin-student-item {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.admin-student-item:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow);
+}
+
+.avatar {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    font-weight: 800;
+}
+
+.student-info {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.admin-row-actions {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: rgba(0,0,0,0.2);
+    border-radius: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.admin-stamp-input {
+    background: rgba(255,255,255,0.1);
+    border: 2px solid var(--glass-border);
+    color: white;
+    border-radius: 12px;
+    text-align: center;
+    font-weight: 700;
+    width: 70px;
+    padding: 8px;
+}
+
+.admin-button-group {
+    display: flex;
+    gap: 8px;
+}
+
+/* Buttons */
+.add-stamp-btn {
+    padding: 10px 20px;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.icon-btn-small {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--glass-border);
+    color: white;
+    padding: 8px;
+    border-radius: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    transition: all 0.2s;
+}
+
+.icon-btn-small:hover {
+    background: rgba(255,255,255,0.1);
+}
+
+/* Inputs */
+input[type="text"], input[type="number"], input[type="date"] {
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px solid var(--glass-border);
+    background: rgba(255,255,255,0.05);
+    color: white;
+}
+
+/* Hide Spinners (Arrows) */
+input[type=number]::-webkit-inner-spin-button, 
+input[type=number]::-webkit-outer-spin-button { 
+  -webkit-appearance: none; 
+  margin: 0; 
+}
+input[type=number] {
+  -moz-appearance: textfield;
+}
+
+.subtitle {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.back-btn {
+    background: none;
+    border: none;
+    color: var(--primary-light);
+    font-weight: 800;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.hidden { display: none !important; }
+
+/* Reward Admin Specifics */
+.reward-admin-item {
+    background: rgba(255,255,255,0.05);
+    padding: 10px;
+    border-radius: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    border: 1px solid transparent;
+    transition: all 0.2s;
+    overflow: hidden; /* Prevent spill */
+    gap: 8px;
+}
+
+.reward-admin-item.editing {
+    background: rgba(255,255,255,0.08);
+    border-color: var(--accent);
+    flex-direction: column;
+    align-items: stretch; /* Ensure children take full width */
+    width: 100%;
+}
+
+.reward-info-admin {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+}
+
+.reward-threshold-badge {
+    background: var(--primary);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 800;
+}
+
+.reward-icon-small { font-size: 1.25rem; }
+
+.reward-text-admin {
+    display: flex;
+    flex-direction: column;
+}
+
+.reward-title-admin {
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+
+/* Edit Form */
+.edit-reward-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 5px 0;
+}
+
+/* Stack on small sidebars */
+@media (max-width: 400px) {
+    .edit-reward-grid { grid-template-columns: 1fr; }
+    .edit-reward-grid > div { grid-column: span 1 !important; }
+}
+
+.edit-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.edit-field label {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-weight: 700;
+}
+
+.edit-field input {
+    padding: 6px 10px;
+    font-size: 0.85rem;
+    width: 100%;
+    box-sizing: border-box;
+    min-width: 0; /* Important for grid flex */
+}
+
+/* Threshold Adjuster */
+.threshold-adjuster {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.threshold-adjuster button {
+    background: var(--primary);
+    border: none;
+    color: white;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 800;
+}
+
+.threshold-adjuster input {
+    width: 45px;
+    text-align: center;
+    padding: 4px !important;
+}
+
+.reward-admin-item.inactive {
+    background: rgba(255,255,255,0.02);
+}
+
+.toggle-btn {
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: none;
+    font-weight: 800;
+    font-size: 0.75rem;
+    cursor: pointer;
+    background: rgba(255,255,255,0.1);
+    color: white;
+}
+
+.toggle-btn.active {
+    background: var(--success);
+    color: white;
+}
+
+/* Login Overlay */
+#login-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: var(--bg-dark);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(10px);
+}
+
+.login-card {
+    background: var(--bg-card);
+    border: 1px solid var(--glass-border);
+    padding: 2.5rem;
+    border-radius: 32px;
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+    box-shadow: var(--shadow);
+}
+
+.login-card h2 {
+    margin-bottom: 1.5rem;
+    font-size: 1.8rem;
+    font-weight: 800;
+}
+
+.login-card input {
+    width: 100%;
+    padding: 14px;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    color: white;
+    font-size: 1.2rem;
+    text-align: center;
+    letter-spacing: 4px;
+    margin-bottom: 1.5rem;
+}
+
+.login-card input:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.login-card button {
+    width: 100%;
+    padding: 14px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.login-card button:hover {
+    background: var(--primary-light);
+}

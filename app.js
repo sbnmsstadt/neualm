@@ -1,0 +1,972 @@
+const API_URL = "https://neualm-infotafel.sb-nmsstadt.workers.dev/api";
+const PIN_ADMIN = "8520"; 
+const PIN_STAMP = "1590"; 
+const PIN_SUPERVISOR = "1590"; 
+
+const MAX_STAMPS = 60;
+const STAMPS_PER_LEVEL = 20;
+
+const AVATARS = ["🦁", "🐯", "🦊", "🐭", "🐹", "🐰", "🐻", "🐼", "🐨", "🐸", "🐵", "🦄", "🐙", "🦋", "🦖"];
+
+let selectedActivity = "Stempel";
+let selectedActivityEmoji = "🌟";
+let ACTIVITIES = [];
+let SETTINGS = {};
+
+let REWARDS = [];
+let selectedStampCount = 1;
+
+async function fetchRewards() {
+    try {
+        const response = await fetch(`${API_URL}/rewards`);
+        if (response.ok) {
+            const raw = await response.json();
+            // Filter inactive rewards (true if undefined or true)
+            REWARDS = raw.filter(r => r.active !== false);
+            // ensure sorted by threshold
+            REWARDS.sort((a,b) => a.threshold - b.threshold);
+        }
+    } catch (err) {
+        console.error("Fehler beim Laden der Belohnungen", err);
+    }
+}
+
+let students = [];
+let currentStudent = null;
+let enteredPin = "";
+let pinCallback = null;
+let isSupervisor = false;
+let isDirectLink = false;
+let syncInterval = null;
+
+document.addEventListener('DOMContentLoaded', async () => {
+    await fetchRewards();
+    updateCommunityGoal();
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const idParam = urlParams.get('id');
+    
+    if (idParam) {
+        isDirectLink = true;
+        loginWithId(idParam);
+    } else {
+        const savedId = localStorage.getItem('studentId');
+        if (savedId) {
+            loginWithId(savedId);
+        }
+    }
+});
+
+function toggleRules() {
+    document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+    document.getElementById('view-rules').classList.remove('hidden');
+}
+
+function startSync() {
+    stopSync();
+    syncInterval = setInterval(() => {
+        if (document.visibilityState === 'visible' && currentStudent && !isSupervisor) {
+            silentSync();
+        }
+    }, 5000);
+}
+
+function stopSync() {
+    if (syncInterval) clearInterval(syncInterval);
+}
+
+async function silentSync() {
+    if (!currentStudent) return;
+    try {
+        const [stRes, setRes] = await Promise.all([
+            fetch(`${API_URL}/students/${currentStudent.id}`),
+            fetch(`${API_URL}/settings`)
+        ]);
+
+        if (stRes.ok && setRes.ok) {
+            const freshData = await stRes.json();
+            const freshSettings = await setRes.json();
+            
+            // Check for changes in student data
+            const studentChanged = freshData.stamps !== currentStudent.stamps || 
+                                   freshData.usedStamps !== currentStudent.usedStamps ||
+                                   JSON.stringify(freshData.redemptions) !== JSON.stringify(currentStudent.redemptions);
+            
+            // Check for changes in group reward activation
+            const settingsChanged = JSON.stringify(freshSettings.groupReward) !== JSON.stringify(SETTINGS.groupReward);
+
+            if (studentChanged || settingsChanged) {
+                currentStudent = freshData;
+                SETTINGS = freshSettings;
+                updateStampDisplay(currentStudent);
+                renderRewards(currentStudent);
+                // Also update home screen if needed (community goal)
+                updateCommunityGoal(); 
+            }
+
+            // Check for group celebration trigger
+            if (freshSettings.celebration && freshSettings.celebration.active) {
+                const lastId = localStorage.getItem('lastCelebrationId');
+                if (lastId !== String(freshSettings.celebration.id)) {
+                    showCelebration(freshSettings.celebration);
+                }
+            }
+        }
+    } catch (err) {
+        console.error("Sync error:", err);
+    }
+}
+
+async function loginWithId(id = null) {
+    const idInput = document.getElementById('student-id-input');
+    const studentId = (id || (idInput ? idInput.value.trim() : "")).toLowerCase();
+    
+    if (!studentId) {
+        if (!id) alert("Bitte dein Kürzel eingeben.");
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/students/${studentId}`);
+        if (response.ok) {
+            currentStudent = await response.json();
+            localStorage.setItem('studentId', currentStudent.id);
+            showDetail(currentStudent);
+        } else {
+            if (!id && idInput) alert("Kürzel nicht gefunden.");
+            localStorage.removeItem('studentId');
+        }
+    } catch (err) {
+        console.error("Fetch error:", err);
+    }
+}
+
+function logout() {
+    localStorage.removeItem('studentId');
+    stopSync();
+    showHome();
+}
+
+function showHome() {
+    isSupervisor = false;
+    isDirectLink = false;
+    stopSync();
+    document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+    document.getElementById('view-home').classList.remove('hidden');
+    updateCommunityGoal();
+}
+
+function showList() {
+    if (!isSupervisor) return;
+    stopSync();
+    document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+    document.getElementById('view-list').classList.remove('hidden');
+    fetchStudents();
+}
+
+async function fetchStudents() {
+    try {
+        const response = await fetch(`${API_URL}/students`);
+        if (response.ok) {
+            students = await response.json();
+            renderStudentList();
+        }
+    } catch (err) {
+        console.error("API error:", err);
+    }
+}
+
+function renderStudentList() {
+    const container = document.getElementById('student-container');
+    container.innerHTML = '';
+
+    students.forEach((s, index) => {
+        const card = document.createElement('div');
+        card.className = 'glass-card student-item';
+        card.onclick = () => showDetail(s);
+        
+        const isVip = s.vip && s.vip.active;
+
+        card.innerHTML = `
+            <div class="student-info">
+                <div class="avatar" style="${isVip ? 'border: 2px solid var(--gold);' : ''}">${s.avatar || s.name.charAt(0)}</div>
+                <div class="student-name">${s.name} ${isVip ? '🏆' : ''}</div>
+            </div>
+            <div class="stamp-count" style="font-size:0.7rem; color:var(--accent); font-weight:800;">${(s.attendanceDays || []).join(', ')}</div>
+        `;
+        container.appendChild(card);
+    });
+}
+
+function showDetail(student) {
+    currentStudent = student;
+    document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+    document.getElementById('view-detail').classList.remove('hidden');
+    
+    document.getElementById('detail-name').innerText = student.name;
+    const avatar = student.avatar || student.name.charAt(0);
+    
+    const isVip = (student.vip && student.vip.active);
+    const vipBadge = document.getElementById('student-week-badge');
+    if (vipBadge) {
+        if (isVip) vipBadge.classList.remove('hidden');
+        else vipBadge.classList.add('hidden');
+    }
+
+    document.getElementById('detail-name').innerText = student.name;
+    document.getElementById('detail-avatar').innerText = avatar;
+
+    document.getElementById('detail-departure').innerText = student.departureTime || '--:--';
+    document.getElementById('detail-days').innerText = (student.attendanceDays || []).join(', ') || 'Keine';
+    
+    const addBtn = document.getElementById('add-stamp-button');
+    const logoutBtn = document.getElementById('logout-btn');
+    const backBtn = document.querySelector('.supervisor-back');
+
+    if (isSupervisor) {
+        addBtn.classList.remove('hidden');
+        logoutBtn.classList.add('hidden');
+        backBtn.classList.remove('hidden');
+        stopSync();
+    } else {
+        addBtn.classList.add('hidden');
+        logoutBtn.classList.remove('hidden');
+        backBtn.classList.add('hidden');
+        startSync();
+    }
+
+    updateStampDisplay(student);
+    renderRewards(student);
+    renderBadges(student);
+    renderHistory(student.history || []);
+
+    // Birthday Surprise
+    if (student.birthday) {
+        const today = new Date();
+        const bday = new Date(student.birthday);
+        if (today.getDate() === bday.getDate() && today.getMonth() === bday.getMonth()) {
+            const key = `birthday_confetti_${student.id}_${today.getFullYear()}`;
+            if (!localStorage.getItem(key)) {
+                fireConfetti();
+                localStorage.setItem(key, 'true');
+                // Optional: show a small message
+                setTimeout(() => alert(`🎉 Alles Gute zum Geburtstag, ${student.name}! 🎂`), 500);
+            }
+        }
+    }
+}
+
+function renderRewards(student) {
+    const list = document.getElementById('reward-list');
+    if (!list) return;
+    list.innerHTML = '';
+    
+    const stamps = student.stamps;
+    const redemptions = student.redemptions || {};
+    
+    // Compute total "used" stamps (how many were spent)
+    // Preference: student.usedStamps from server, Fallback: sum of all confirmed thresholds
+    let usedStamps = student.usedStamps || 0;
+    if (usedStamps === 0 && student.redemptions) {
+        Object.entries(redemptions).forEach(([t, s]) => {
+            if (s === 'completed') usedStamps += parseInt(t);
+        });
+    }
+    const freeStamps = stamps - usedStamps;
+
+    // --- NEW: Group Reward Donation Button (Conditional) ---
+    const donateBtn = document.getElementById('group-contribute-btn');
+    if (donateBtn) {
+        const isGroupActive = SETTINGS.groupReward && SETTINGS.groupReward.active;
+        const isFull = isGroupActive && SETTINGS.groupReward.current >= SETTINGS.groupReward.target;
+        
+        if (!isSupervisor && isGroupActive && !isFull && freeStamps >= 1) {
+            donateBtn.classList.remove('hidden');
+        } else {
+            donateBtn.classList.add('hidden');
+        }
+        
+        // NEW: Live Status Bar in Detail View
+        const donateContainer = document.getElementById('group-reward-detail-container');
+        if (donateContainer) {
+            if (isGroupActive) {
+                donateContainer.classList.remove('hidden');
+                
+                const gTitle = SETTINGS.groupReward.title || 'Filmtag';
+                const gCurrent = SETTINGS.groupReward.current || 0;
+                const gTarget = SETTINGS.groupReward.target || 8;
+                const gPercent = Math.min(100, (gCurrent / gTarget) * 100);
+
+                document.getElementById('group-reward-detail-label').innerText = `🎬 ${gTitle} Stand`;
+                document.getElementById('group-reward-detail-numbers').innerText = `${gCurrent} / ${gTarget}`;
+                document.getElementById('group-reward-detail-bar').style.width = `${gPercent}%`;
+            } else {
+                donateContainer.classList.add('hidden');
+            }
+        }
+    }
+    // ------------------------------------------
+
+    REWARDS.forEach(reward => {
+        const item = document.createElement('div');
+        const reqThreshold = parseInt(reward.threshold);
+        const isMilestone = reqThreshold >= 60;
+        const isReached = isMilestone ? (stamps >= reqThreshold) : (freeStamps >= reqThreshold);
+        const progress = Math.min(100, (isMilestone ? (stamps / reqThreshold) : (freeStamps / reqThreshold)) * 100);
+        
+        const status = redemptions[reward.threshold]; // undefined, 'pending', 'completed'
+        
+        item.className = `glass-card reward-item ${isReached ? 'unlocked' : ''} ${status === 'completed' ? 'redeemed' : ''}`;
+        
+        let actionHTML = '';
+        if (isReached) {
+            if (status === 'pending') {
+                actionHTML = '<span class="reward-status warning">Angefragt ⏳</span>';
+            } else if (status === 'completed') {
+                // Milestone is one-and-done usually, or re-redeemable by total
+                if (isMilestone ? (stamps >= reqThreshold) : (freeStamps >= reqThreshold)) {
+                    actionHTML = `<button class="redeem-btn" onclick="requestRedemption(${reward.threshold})">Nochmal</button>`;
+                } else {
+                    actionHTML = '<span class="reward-status success">Eingelöst ✅</span>';
+                }
+            } else {
+                actionHTML = `<button class="redeem-btn" onclick="requestRedemption(${reward.threshold})">Einlösen</button>`;
+            }
+        } else {
+            actionHTML = `<span class="reward-status" style="font-size:0.7rem; opacity:0.5;">Gesperrt 🔒</span>`;
+        }
+
+        item.innerHTML = `
+            <div class="reward-icon">${reward.icon}</div>
+            <div style="flex:1">
+                <div class="reward-title">${reward.title}</div>
+                <div class="reward-desc">${reward.desc}</div>
+                <div class="reward-progress-bg">
+                    <div class="reward-progress-bar" style="width: ${progress}%"></div>
+                </div>
+            </div>
+            <div style="text-align:right; display:flex; flex-direction:column; align-items:flex-end; justify-content:center; min-width:80px;">
+                <div style="font-size: 0.65rem; font-weight: 900; color: var(--text-muted); margin-bottom: 4px; letter-spacing: 0.05em;">
+                    ${reward.threshold} STEMPEL
+                </div>
+                ${actionHTML}
+            </div>
+        `;
+        list.appendChild(item);
+    });
+}
+
+async function requestRedemption(threshold) {
+    if (!currentStudent) return;
+    try {
+        const response = await fetch(`${API_URL}/students/${currentStudent.id}/redeem`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ threshold: threshold })
+        });
+        if (response.ok) {
+            currentStudent = await response.json();
+            renderRewards(currentStudent);
+            alert("Einlösung angefragt! Der Admin wird es bald bestätigen.");
+        } else {
+            alert("Fehler: Server hat den Befehl nicht erkannt. Hast du die neue worker.js schon auf Cloudflare hochgeladen?");
+        }
+    } catch (err) {
+        alert("Fehler bei der Anfrage. Keine Verbindung zum Server.");
+    }
+}
+
+function goBack() {
+    if (isDirectLink) return;
+    if (isSupervisor) {
+        showList();
+    } else {
+        showHome();
+    }
+}
+
+function updateStampDisplay(student) {
+    const mainGrid = document.getElementById('stamp-grid');
+    const text = document.getElementById('detail-stamps-text');
+    if (!mainGrid) return;
+    mainGrid.innerHTML = '';
+    text.innerText = `${student.stamps} von ${MAX_STAMPS} Stempel gesammelt`;
+
+    // Checkmarks: based on TOTAL stamps ever spent (used)
+    let usedStamps = student.usedStamps || 0;
+    
+    // If usedStamps is 0 (old data or start), try to reconstruct it from redemptions
+    if (usedStamps === 0 && student.redemptions) {
+        let sum = 0;
+        Object.entries(student.redemptions).forEach(([t, s]) => {
+            if (s === 'completed') sum += parseInt(t);
+        });
+        usedStamps = sum;
+    }
+    const maxCompletedRedemption = usedStamps;
+
+    // Create 3 levels
+    const dotsContainer = document.getElementById('carousel-dots');
+    dotsContainer.innerHTML = '';
+
+    for (let l = 1; l <= 3; l++) {
+        const levelContainer = document.createElement('div');
+        levelContainer.className = 'level-group';
+        levelContainer.dataset.level = l;
+        
+        const start = (l - 1) * STAMPS_PER_LEVEL + 1;
+        const end = l * STAMPS_PER_LEVEL;
+        const isUnlocked = student.stamps >= (l - 1) * STAMPS_PER_LEVEL;
+
+        const levelNames = ["Stempel-Lehrling 🌱", "Stempel-Profi ⭐", "Stempel-Legende 👑"];
+        const levelName = levelNames[l - 1] || `Karte ${l}`;
+
+        levelContainer.innerHTML = `
+            <div class="level-header ${isUnlocked ? 'active' : ''}">
+                <span>${levelName}</span>
+                <span class="level-range">${start}-${end}</span>
+            </div>
+            <div class="stamp-grid-20"></div>
+        `;
+
+        const grid = levelContainer.querySelector('.stamp-grid-20');
+        for (let i = start; i <= end; i++) {
+            const slot = document.createElement('div');
+            let isFilled = i <= student.stamps;
+            let isChecked = i <= maxCompletedRedemption;
+            
+            slot.className = `stamp-slot ${isFilled ? 'filled' : ''} ${isChecked ? 'checked' : ''}`;
+            if (isChecked) {
+                slot.innerText = '✔';
+            } else if (isFilled) {
+                slot.innerText = '★';
+            } else {
+                slot.innerText = '';
+            }
+            grid.appendChild(slot);
+        }
+        mainGrid.appendChild(levelContainer);
+
+        // Add Dot
+        const dot = document.createElement('div');
+        dot.className = 'dot';
+        dot.dataset.target = l;
+        dotsContainer.appendChild(dot);
+    }
+
+    // Scroll listener for dots
+    mainGrid.onscroll = () => {
+        const scrollPos = mainGrid.scrollLeft;
+        const width = mainGrid.offsetWidth;
+        const activeIdx = Math.round(scrollPos / width);
+        document.querySelectorAll('.dot').forEach((d, i) => {
+            d.classList.toggle('active', i === activeIdx);
+        });
+    };
+
+    // Auto-scroll to current level
+    const currentLevel = Math.min(3, Math.floor(student.stamps / STAMPS_PER_LEVEL) + 1);
+    
+    // Glitter Explosion (Confetti) Logic
+    const milestones = [20, 40, 60];
+    milestones.forEach(m => {
+        if (student.stamps >= m) {
+            const key = `confetti_${student.id}_${m}`;
+            if (!localStorage.getItem(key)) {
+                fireConfetti();
+                localStorage.setItem(key, 'true');
+            }
+        }
+    });
+
+    setTimeout(() => {
+        const target = mainGrid.querySelector(`.level-group[data-level="${currentLevel}"]`);
+        if (target) {
+            target.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+            // Initial dot update
+            document.querySelectorAll('.dot').forEach((d, i) => {
+                d.classList.toggle('active', i === (currentLevel - 1));
+            });
+        }
+    }, 100);
+}
+
+function fireConfetti() {
+    const duration = 3 * 1000;
+    const animationEnd = Date.now() + duration;
+    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
+    function randomInRange(min, max) {
+      return Math.random() * (max - min) + min;
+    }
+
+    const interval = setInterval(function() {
+      const timeLeft = animationEnd - Date.now();
+
+      if (timeLeft <= 0) {
+        return clearInterval(interval);
+      }
+
+      const particleCount = 50 * (timeLeft / duration);
+      // since particles fall down, start a bit higher than random
+      confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } }));
+      confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } }));
+    }, 250);
+}
+
+// PIN Overlay
+function openPinOverlay(callback, title = "PIN") {
+    document.getElementById('pin-overlay').classList.add('active');
+    document.querySelector('#pin-overlay h3').innerText = title;
+    enteredPin = "";
+    pinCallback = callback;
+    updatePinDisplay();
+}
+
+function openSupervisorPin() {
+    openPinOverlay((pin) => {
+        if (pin === PIN_SUPERVISOR) {
+            isSupervisor = true;
+            showList();
+            return true;
+        }
+        return false;
+    }, "Betreuer Login");
+}
+
+function openAdminPin() {
+    openPinOverlay((pin) => {
+        if (pin === PIN_ADMIN) {
+            window.location.href = 'admin/index.html';
+            return true;
+        }
+        return false;
+    }, "Admin-PIN");
+}
+
+function openStampPin(skipOverlay = false) {
+    // Always show activity picker first to get the reason
+    if (!skipOverlay && document.getElementById('activity-overlay').classList.contains('active') === false) {
+        openActivityOverlay();
+        return;
+    }
+
+    // If already in supervisor mode, we don't need the PIN again
+    if (isSupervisor) {
+        addStamp(selectedStampCount);
+        return;
+    }
+
+    openPinOverlay((pin) => {
+        if (pin === PIN_STAMP) {
+            addStamp(selectedStampCount);
+            return true;
+        }
+        return false;
+    }, "Stempel vergeben");
+}
+
+function closePinOverlay() {
+    document.getElementById('pin-overlay').classList.remove('active');
+}
+
+function addPin(num) {
+    if (enteredPin.length < 4) {
+        enteredPin += num;
+        updatePinDisplay();
+        if (enteredPin.length === 4) {
+            setTimeout(validatePin, 200);
+        }
+    }
+}
+
+function clearPin() {
+    enteredPin = "";
+    updatePinDisplay();
+}
+
+function updatePinDisplay() {
+    const display = document.getElementById('pin-display');
+    display.innerText = "•".repeat(enteredPin.length);
+}
+
+function validatePin() {
+    if (typeof pinCallback !== 'function') return;
+    const success = pinCallback(enteredPin);
+    if (success) {
+        closePinOverlay();
+    } else {
+        alert("Falscher PIN!");
+        clearPin();
+    }
+}
+
+async function addStamp(count = 1) {
+    if (!currentStudent) return;
+    const finalCount = Math.min(MAX_STAMPS, currentStudent.stamps + count);
+    if (currentStudent.stamps < MAX_STAMPS) {
+        const newCount = finalCount;
+        try {
+            const response = await fetch(`${API_URL}/students/${currentStudent.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    stamps: newCount,
+                    reason: selectedActivity 
+                })
+            });
+            if (response.ok) {
+                currentStudent = await response.json();
+                updateStampDisplay(currentStudent);
+                renderRewards(currentStudent);
+                renderHistory(currentStudent.history || []);
+                
+                // Reset activity for next time
+                selectedActivity = "Stempel";
+                selectedActivityEmoji = "🌟";
+                
+                // Close any remaining overlays (like activity or pin)
+                closeActivityOverlay();
+                closePinOverlay();
+            }
+        } catch (err) {
+            alert("Fehler beim Speichern.");
+        }
+    }
+}
+// Community Goal
+async function updateCommunityGoal(providedStudents = null, providedSettings = null) {
+    try {
+        let allStudents = providedStudents;
+        let settings = providedSettings;
+
+        if (!allStudents || !settings) {
+            const [stRes, setRes] = await Promise.all([
+                fetch(`${API_URL}/students`),
+                fetch(`${API_URL}/settings`)
+            ]);
+            if (stRes.ok && setRes.ok) {
+                allStudents = await stRes.json();
+                settings = await setRes.json();
+                SETTINGS = settings;
+            }
+        }
+        
+        if (allStudents && settings) {
+            // 1. Community Goal
+            const cGoalContainer = document.getElementById('community-goal-container');
+            if (cGoalContainer) {
+                if (settings.communityGoalVisible === false) {
+                    cGoalContainer.style.display = 'none';
+                } else {
+                    cGoalContainer.style.display = 'block';
+                    const target = settings.communityTarget || 500;
+                    const title = settings.communityTitle || "Pizza-Party";
+                    const total = allStudents.reduce((sum, s) => sum + (s.stamps || 0), 0);
+                    const progress = Math.min(100, (total / target) * 100);
+                    
+                    document.getElementById('community-title-label').innerText = `🌍 ${title}`;
+                    document.getElementById('community-total-text').innerText = `${total} / ${target}`;
+                    document.getElementById('community-progress-bar').style.width = `${progress}%`;
+                }
+            }
+
+            // 2. Group Reward (Filmtag)
+            const gHome = document.getElementById('group-reward-home');
+            const gTitle = document.getElementById('group-reward-title-home');
+            const gStatus = document.getElementById('group-reward-status-home');
+            const gBar = document.getElementById('group-reward-bar-home');
+
+            if (settings.groupReward && gHome) {
+                gHome.style.display = settings.groupReward.active ? 'block' : 'none';
+                if (gTitle) gTitle.innerText = `${settings.groupReward.icon || '🎬'} ${settings.groupReward.title}`;
+                if (gStatus) gStatus.innerText = `${settings.groupReward.current} / ${settings.groupReward.target}`;
+                const gProgress = Math.min(100, (settings.groupReward.current / settings.groupReward.target) * 100);
+                if (gBar) gBar.style.width = `${gProgress}%`;
+            }
+        }
+    } catch (err) {
+        console.error("Fehler beim Community-Goal Update", err);
+    }
+}
+
+// Celebration (Confetti)
+function showCelebration(data) {
+    localStorage.setItem('lastCelebrationId', data.id);
+    document.getElementById('celebration-text').innerText = `Herzlichen Glückwunsch! Der ${data.title || 'Filmtag'} wurde genehmigt! 🍿🎬`;
+    
+    // Switch to celebration view
+    document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+    document.getElementById('view-celebration').classList.remove('hidden');
+    
+    fireConfetti();
+}
+
+function fireConfetti() {
+    const duration = 5 * 1000;
+    const animationEnd = Date.now() + duration;
+    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 10001 };
+
+    function randomInRange(min, max) {
+        return Math.random() * (max - min) + min;
+    }
+
+    const interval = setInterval(function() {
+        const timeLeft = animationEnd - Date.now();
+
+        if (timeLeft <= 0) {
+            return clearInterval(interval);
+        }
+
+        const particleCount = 50 * (timeLeft / duration);
+        // since particles fall down, start a bit higher than random
+        confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } }));
+        confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } }));
+    }, 250);
+}
+
+function closeCelebration() {
+    document.getElementById('view-celebration').classList.add('hidden');
+    showHome();
+}
+
+// Streak Calculation
+function calculateStreak(history) {
+    if (!history || history.length === 0) return 0;
+    
+    // Sort and unique dates, handling both strings and objects
+    const dateStrings = history.map(h => typeof h === 'string' ? h : h.date);
+    const dates = [...new Set(dateStrings)].sort();
+    const todayStr = new Date().toISOString().split('T')[0];
+    
+    // Helper to get date object from string (local time)
+    const parse = (s) => new Date(s);
+    
+    let current = todayStr;
+    let streak = 0;
+    
+    // Check if last stamp was today or yesterday
+    const lastDate = dates[dates.length - 1];
+    const diffToToday = (parse(todayStr) - parse(lastDate)) / (1000 * 60 * 60 * 24);
+    
+    if (diffToToday > 1) return 0; // Streak broken
+
+    // Count backwards
+    let checkDate = parse(lastDate);
+    for (let i = dates.length - 1; i >= 0; i--) {
+        const d = parse(dates[i]);
+        const diff = (checkDate - d) / (1000 * 60 * 60 * 24);
+        
+        if (diff === 0) {
+            streak++;
+        } else if (diff === 1) {
+            streak++;
+            checkDate = d;
+        } else {
+            break;
+        }
+    }
+    return streak;
+}
+
+// Avatar Picker
+function openAvatarPicker() {
+    if (isSupervisor) return; // Normally students pick their own
+    const overlay = document.getElementById('avatar-overlay');
+    const list = document.getElementById('avatar-list');
+    list.innerHTML = '';
+    
+    AVATARS.forEach(emoji => {
+        const btn = document.createElement('div');
+        btn.className = 'avatar-item';
+        btn.innerText = emoji;
+        btn.onclick = () => selectAvatar(emoji);
+        list.appendChild(btn);
+    });
+    
+    overlay.classList.add('active');
+}
+
+function closeAvatarOverlay() {
+    document.getElementById('avatar-overlay').classList.remove('active');
+}
+
+async function selectAvatar(emoji) {
+    if (!currentStudent) return;
+    
+    // Optimistic UI update
+    currentStudent.avatar = emoji;
+    document.getElementById('detail-avatar').innerText = emoji;
+    closeAvatarOverlay();
+
+    // Persist to server (Will work fully after Phase 2, but PATCH now for stamps)
+    try {
+        const response = await fetch(`${API_URL}/students/${currentStudent.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ avatar: emoji })
+        });
+        if (response.ok) {
+            console.log("Avatar saved.");
+        }
+    } catch (err) {
+        console.error("Fehler beim Speichern des Avatars.");
+    }
+}
+
+function renderBadges(student) {
+    const container = document.getElementById('badge-container');
+    if (!container) return;
+    container.innerHTML = '';
+    
+    // Auto-calculate badges based on current state
+    const badges = [];
+    if (student.stamps > 0) badges.push("Erster Stempel! ✨");
+    if (student.stamps >= 10) badges.push("Stempel-Held ⭐");
+    if (student.stamps >= 20) badges.push("Profi-Karte 🔓");
+    if (student.stamps >= 40) badges.push("Legenden-Status 👑");
+    
+    const streak = calculateStreak(student.history || []);
+    if (streak >= 3) badges.push("Streak-Meister 🔥");
+    if (streak >= 5) badges.push("Nicht zu stoppen! ⚡");
+
+    // Add manual badges from student data if any
+    if (student.badges && Array.isArray(student.badges)) {
+        student.badges.forEach(b => {
+            if (!badges.includes(b)) badges.push(b);
+        });
+    }
+
+    badges.forEach(b => {
+        const span = document.createElement('span');
+        span.className = 'badge-tag';
+        span.innerText = b;
+        container.appendChild(span);
+    });
+}
+
+function renderHistory(history) {
+    const container = document.getElementById('history-list');
+    if (!container) return;
+    container.innerHTML = '';
+    
+    if (history.length === 0) {
+        container.innerHTML = '<i style="font-size:0.7rem; color:var(--text-muted)">Noch keine Einträge.</i>';
+        return;
+    }
+
+    // Show last 5 entries
+    const lastEntries = [...history].reverse().slice(0, 5);
+    
+    lastEntries.forEach(entry => {
+        const isObj = typeof entry === 'object';
+        const dateStr = isObj ? entry.date : entry;
+        const reason = isObj ? entry.reason : "Stempel";
+        
+        const [y, m, d] = dateStr.split('-');
+        const formattedDate = `${d}.${m}.`;
+
+        const item = document.createElement('div');
+        item.className = 'history-item';
+        item.innerHTML = `
+            <div style="display:flex; align-items:center;">
+                <span class="history-reason">${reason}</span>
+            </div>
+            <span class="history-date">${formattedDate}</span>
+        `;
+        container.appendChild(item);
+    });
+}
+
+// Activity Picker
+async function openActivityOverlay() {
+    document.getElementById('activity-overlay').classList.add('active');
+    document.getElementById('custom-activity').value = '';
+    setStampCount(1); // Reset to 1 by default
+    
+    // Load from server settings
+    try {
+        const res = await fetch(`${API_URL}/settings`);
+        if (res.ok) {
+            const settings = await res.json();
+            ACTIVITIES = settings.activities || [];
+            renderActivityPicker();
+        }
+    } catch (err) {
+        console.error("Fehler beim Laden der Aktivitäten");
+    }
+}
+
+function renderActivityPicker() {
+    const list = document.getElementById('activity-list');
+    if (!list) return;
+    list.innerHTML = '';
+    
+    ACTIVITIES.forEach(act => {
+        const item = document.createElement('div');
+        item.className = 'avatar-item';
+        item.onclick = (e) => selectActivity(act.label, act.emoji, e);
+        item.innerHTML = `${act.emoji}<br><span style="font-size:0.6rem">${act.label}</span>`;
+        list.appendChild(item);
+    });
+}
+
+function closeActivityOverlay() {
+    document.getElementById('activity-overlay').classList.remove('active');
+}
+
+function selectActivity(reason, emoji, event) {
+    selectedActivity = reason;
+    selectedActivityEmoji = emoji;
+    
+    // Visual feedback
+    document.querySelectorAll('#activity-list .avatar-item').forEach(el => el.style.borderColor = 'transparent');
+    if (event && event.currentTarget) {
+        event.currentTarget.style.borderColor = 'var(--primary-light)';
+    }
+}
+
+function confirmActivity() {
+    const custom = document.getElementById('custom-activity').value.trim();
+    if (custom) {
+        selectedActivity = custom;
+        selectedActivityEmoji = "🌟";
+    }
+    // Don't close overlay here, let openStampPin with skipOverlay handle the flow
+    openStampPin(true);
+}
+
+function setStampCount(n) {
+    selectedStampCount = n;
+    const btn1 = document.getElementById('count-1');
+    const btn2 = document.getElementById('count-2');
+    if (btn1) btn1.classList.toggle('active', n === 1);
+    if (btn2) btn2.classList.toggle('active', n === 2);
+}
+
+async function contributeGroupReward() {
+    if (!currentStudent) return;
+    if (!confirm("Möchtest du 1 Stempel für das Gruppen-Ziel spenden?")) return;
+    
+    try {
+        const res = await fetch(`${API_URL}/students/${currentStudent.id}/group-contribute`, {
+            method: 'POST'
+        });
+        
+        if (res.ok) {
+             const updated = await res.json();
+             currentStudent = updated;
+             
+             // IMPORTANT: Force refresh global settings BEFORE showing detail
+             await updateCommunityGoal();
+             
+             alert("Danke für deine Spende! 🎬✨");
+             showDetail(currentStudent);
+        } else {
+             const msg = await res.text();
+             alert(msg || "Fehler bei der Spende.");
+        }
+    } catch (err) {
+        alert("Fehler bei der Verbindung.");
+    }
+}

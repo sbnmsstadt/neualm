@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NACHMI NMS-Stadt — Infotafel</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --primary-light: #60a5fa;
+            --accent: #8b5cf6;
+            --success: #10b981;
+            --gold: #f59e0b;
+            --pink: #ec4899;
+            --bg: #0a0a1a;
+            --glass: rgba(255,255,255,0.04);
+            --glass-border: rgba(255,255,255,0.08);
+            --text-muted: rgba(255,255,255,0.4);
+        }
+
+        html { font-size: 125%; }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg);
+            color: white;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 80% 60% at 20% 20%, rgba(59,130,246,0.08) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 80% at 80% 80%, rgba(139,92,246,0.08) 0%, transparent 60%),
+                radial-gradient(ellipse 50% 50% at 50% 50%, rgba(16,185,129,0.04) 0%, transparent 70%);
+            animation: bgPulse 12s ease-in-out infinite alternate;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        @keyframes bgPulse {
+            0% { opacity: 0.6; transform: scale(1); }
+            100% { opacity: 1; transform: scale(1.05); }
+        }
+
+        .particle {
+            position: fixed;
+            border-radius: 50%;
+            opacity: 0.12;
+            animation: floatUp linear infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(110vh); opacity: 0; }
+            10% { opacity: 0.12; }
+            90% { opacity: 0.12; }
+            100% { transform: translateY(-10vh); opacity: 0; }
+        }
+
+        /* ── LAYOUT ───────────────────────────── */
+        .board {
+            position: relative;
+            z-index: 1;
+            display: grid;
+            grid-template-columns: 0.8fr 1.5fr 0.9fr;
+            grid-template-rows: auto 1fr auto;
+            gap: 18px;
+            padding: 18px 18px 54px;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* ── HEADER ───────────────────────────── */
+        header.header {
+            grid-column: 1 / -1;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 28px;
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 18px;
+            backdrop-filter: blur(20px);
+            gap: 20px;
+        }
+
+        .header-logo {
+            font-size: 1.8rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--primary-light), var(--accent));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header-title {
+            font-size: 1.5rem;
+            font-weight: 900;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            background: linear-gradient(135deg, rgba(255,255,255,0.95), rgba(255,255,255,0.55));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            flex: 1;
+            text-align: center;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .clock {
+            font-size: 2rem;
+            font-weight: 900;
+            font-variant-numeric: tabular-nums;
+            background: linear-gradient(135deg, white, rgba(255,255,255,0.55));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Countdown pill in header */
+        .countdown-pill {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 18px;
+            background: rgba(236,72,153,0.12);
+            border: 1px solid rgba(236,72,153,0.35);
+            border-radius: 30px;
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: #f9a8d4;
+            white-space: nowrap;
+        }
+
+        .countdown-pill .days {
+            font-size: 1.7rem;
+            font-weight: 900;
+            color: var(--pink);
+        }
+
+        /* ── CARDS ────────────────────────────── */
+        .card {
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 22px;
+            backdrop-filter: blur(20px);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-shrink: 0;
+        }
+
+        .card-icon { font-size: 2.4rem; line-height: 1; }
+
+        .card-title {
+            font-size: 1.3rem;
+            font-weight: 900;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+
+        .card-content {
+            flex: 1;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            position: relative;
+        }
+
+        /* ── KIDS SCROLL BAND ──────────────────── */
+        .card.birthday-card { border-color: rgba(236,72,153,0.25); }
+        .card.birthday-card .card-title { color: #f472b6; }
+
+        /* Vertical scroll band */
+        .scroll-band {
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .scroll-band-inner {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            animation: scrollDown linear infinite;
+        }
+
+        @keyframes scrollDown {
+            0%   { transform: translateY(0); }
+            100% { transform: translateY(-50%); }
+        }
+
+        .kid-card {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 12px 16px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 14px;
+            flex-shrink: 0;
+            transition: background 0.3s;
+        }
+
+        .kid-card.today {
+            background: rgba(236,72,153,0.1);
+            border-color: rgba(236,72,153,0.35);
+            box-shadow: 0 0 12px rgba(236,72,153,0.2);
+        }
+
+        .kid-card.upcoming {
+            background: rgba(236,72,153,0.05);
+            border-color: rgba(236,72,153,0.18);
+        }
+
+        .kid-card-avatar {
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.6rem;
+            flex-shrink: 0;
+            background: rgba(255,255,255,0.06);
+        }
+
+        .kid-card.today .kid-card-avatar {
+            background: rgba(236,72,153,0.2);
+            box-shadow: 0 0 14px rgba(236,72,153,0.4);
+        }
+
+        .kid-card-info { flex: 1; min-width: 0; }
+
+        .kid-card-name {
+            font-size: 1.05rem;
+            font-weight: 800;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .kid-card.today .kid-card-name { color: #f472b6; }
+
+        .kid-card-date {
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .kid-card.today .kid-card-date { color: #f9a8d4; }
+        .kid-card.upcoming .kid-card-date { color: rgba(236,72,153,0.7); }
+
+        .kid-card-badge {
+            font-size: 0.65rem;
+            font-weight: 900;
+            padding: 3px 8px;
+            border-radius: 6px;
+            letter-spacing: 0.06em;
+            flex-shrink: 0;
+        }
+
+        .kid-card-badge.today-badge {
+            background: rgba(236,72,153,0.2);
+            color: #f472b6;
+            border: 1px solid rgba(236,72,153,0.4);
+            animation: todayBlink 1.2s ease-in-out infinite;
+        }
+
+
+        .float-kid {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            animation: kidDrift ease-in-out infinite alternate;
+        }
+
+        @keyframes kidDrift {
+            0%   { transform: translate(0px, 0px) rotate(-1deg); }
+            33%  { transform: translate(4px, -10px) rotate(0.5deg); }
+            66%  { transform: translate(-3px, -6px) rotate(-0.5deg); }
+            100% { transform: translate(2px, -14px) rotate(1deg); }
+        }
+
+        .float-avatar {
+            width: 58px;
+            height: 58px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.7rem;
+            border: 2px solid transparent;
+            background: rgba(255,255,255,0.06);
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        .float-avatar.today {
+            border-color: var(--pink);
+            background: rgba(236,72,153,0.18);
+            box-shadow: 0 0 18px rgba(236,72,153,0.5);
+        }
+
+        .float-avatar.upcoming {
+            border-color: rgba(236,72,153,0.4);
+            background: rgba(236,72,153,0.08);
+        }
+
+        .float-name {
+            font-size: 0.82rem;
+            font-weight: 800;
+            color: rgba(255,255,255,0.8);
+            text-align: center;
+            max-width: 72px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .float-name.today { color: #f472b6; }
+
+        .float-bday {
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: rgba(255,255,255,0.45);
+            letter-spacing: 0.02em;
+        }
+
+        .float-bday.today { color: #f472b6; font-weight: 900; }
+        .float-bday.upcoming { color: rgba(236,72,153,0.75); font-weight: 800; }
+
+        .today-tag {
+            font-size: 0.55rem;
+            color: #f472b6;
+            font-weight: 900;
+            letter-spacing: 0.06em;
+            line-height: 1;
+            animation: todayBlink 1.2s ease-in-out infinite;
+        }
+
+        @keyframes todayBlink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* ── CENTER COLUMN ────────────────────── */
+        .center-col {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        /* Filmtag */
+        .card.filmtag-card { border-color: rgba(59,130,246,0.25); }
+        .card.filmtag-card .card-title { color: var(--primary-light); }
+
+        .filmtag-progress-container {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            overflow: hidden;
+            height: 28px;
+            border: 1px solid var(--glass-border);
+            position: relative;
+        }
+
+        .filmtag-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            border-radius: 12px;
+            transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .filmtag-progress-bar::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+            animation: shimmer 2.5s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(200%); }
+        }
+
+        .filmtag-numbers {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+        }
+
+        .filmtag-current {
+            font-size: 2.8rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--primary-light), var(--accent));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 1;
+        }
+
+        .filmtag-of { font-size: 0.85rem; color: var(--text-muted); font-weight: 700; }
+        .filmtag-target { font-size: 1.8rem; font-weight: 900; color: var(--text-muted); }
+
+        /* Klassen-Energie */
+        .card.energy-card { border-color: rgba(16,185,129,0.25); }
+        .card.energy-card .card-title { color: #6ee7b7; }
+
+        .energy-row {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            flex: 1;
+        }
+
+        .energy-top {
+            display: flex;
+            align-items: baseline;
+            gap: 12px;
+        }
+
+        .energy-number {
+            font-size: 2.2rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #6ee7b7, var(--success));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 1;
+        }
+
+        .energy-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            line-height: 1.5;
+        }
+
+        .energy-bar-row {
+            display: flex;
+            gap: 8px;
+            align-items: flex-end;
+            height: 48px;
+            width: 100%;
+            padding: 0 8px;
+        }
+
+        .energy-bar-seg {
+            flex: 1;
+            border-radius: 6px 6px 2px 2px;
+            background: rgba(16,185,129,0.12);
+            border: 1px solid rgba(16,185,129,0.15);
+            transition: all 0.6s ease;
+            position: relative;
+        }
+
+        .energy-bar-seg.lit {
+            background: linear-gradient(180deg, #34d399, #10b981);
+            border-color: rgba(16,185,129,0.5);
+            box-shadow: 0 0 10px rgba(16,185,129,0.35);
+        }
+
+        .energy-day-label {
+            display: flex;
+            gap: 8px;
+            width: 100%;
+            padding: 0 8px;
+        }
+
+        .energy-day-label span {
+            flex: 1;
+            text-align: center;
+            font-size: 0.6rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        /* Redemptions */
+        .card.redemptions-card { border-color: rgba(245,158,11,0.25); }
+        .card.redemptions-card .card-title { color: #fcd34d; }
+        .card.redemptions-card .card-content {
+            overflow: hidden;
+        }
+
+        /* Scroll wrap for redemption items */
+        .redemptions-scroll-wrap {
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .redemptions-scroll-inner {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .redemptions-scroll-inner.scrolling {
+            animation: scrollDown linear infinite;
+        }
+
+        .redemption-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            background: rgba(245,158,11,0.07);
+            border: 1px solid rgba(245,158,11,0.15);
+            border-radius: 12px;
+        }
+
+        .redemption-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, var(--gold), #b45309);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .redemption-name { font-size: 1rem; font-weight: 800; }
+        .redemption-reward { font-size: 0.72rem; color: #fcd34d; font-weight: 600; }
+
+        /* VIP */
+        .card.vip-card { border-color: rgba(245,158,11,0.3); }
+        .card.vip-card .card-title { color: var(--gold); }
+
+        .vip-big {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            padding: 20px;
+            background: rgba(245,158,11,0.08);
+            border: 1px solid rgba(245,158,11,0.25);
+            border-radius: 20px;
+            flex: 1;
+            width: 100%;
+        }
+
+        .vip-star { font-size: 2.5rem; animation: vipPulse 2s ease-in-out infinite; flex-shrink: 0; }
+
+        @keyframes vipPulse {
+            0%, 100% { filter: drop-shadow(0 0 6px rgba(245,158,11,0.5)); transform: scale(1); }
+            50% { filter: drop-shadow(0 0 20px rgba(245,158,11,0.9)); transform: scale(1.1); }
+        }
+
+        .vip-avatar-big {
+            width: 80px;
+            height: 80px;
+            border-radius: 18px;
+            background: linear-gradient(135deg, var(--gold), #b45309);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.8rem;
+            box-shadow: 0 0 24px rgba(245,158,11,0.4);
+            flex-shrink: 0;
+            border: 2px solid rgba(255,255,255,0.2);
+        }
+
+        .vip-info-horizontal {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            flex: 1;
+        }
+
+        .vip-name-big {
+            font-size: 2.2rem;
+            font-weight: 900;
+            text-align: left;
+            line-height: 1.1;
+            background: linear-gradient(135deg, #fff, var(--gold));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .vip-days-big {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--gold);
+            background: rgba(245,158,11,0.12);
+            border: 1px solid rgba(245,158,11,0.3);
+            padding: 4px 12px;
+            border-radius: 8px;
+        }
+
+        /* Right Column Layout */
+        .right-col {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        .card.vip-card {
+            flex-shrink: 0;
+        }
+
+        .daily-notes-content {
+            font-size: 1.45rem;
+            line-height: 1.4;
+            color: rgba(255,255,255,1);
+            white-space: pre-wrap;
+            padding: 12px;
+            font-weight: 800;
+            letter-spacing: -0.01em;
+        }
+
+        .projects-content {
+            font-size: 1.45rem;
+            line-height: 1.4;
+            color: rgba(255,255,255,1);
+            white-space: pre-wrap;
+            padding: 12px;
+            font-weight: 800;
+            letter-spacing: -0.01em;
+        }
+
+        .today-plan-content {
+            font-size: 1.45rem;
+            line-height: 1.4;
+            color: rgba(255,255,255,1);
+            white-space: pre-wrap;
+            padding: 12px;
+            font-weight: 800;
+            letter-spacing: -0.01em;
+        }
+
+        /* Empty state */
+        .empty-state {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            font-weight: 700;
+            font-size: 0.9rem;
+            gap: 8px;
+        }
+
+        .empty-icon { font-size: 2rem; opacity: 0.35; }
+
+        /* ── TICKER (bottom bar) ──────────────── */
+        .ticker-bar {
+            grid-column: 1 / -1;
+            display: flex;
+            align-items: center;
+            gap: 0;
+            background: rgba(0,0,0,0.35);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            overflow: hidden;
+            height: 38px;
+            backdrop-filter: blur(10px);
+        }
+
+        .ticker-label {
+            padding: 0 16px;
+            font-size: 0.7rem;
+            font-weight: 900;
+            color: var(--primary-light);
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            border-right: 1px solid var(--glass-border);
+            white-space: nowrap;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .ticker-scroll-wrap {
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+            height: 100%;
+        }
+
+        .ticker-scroll {
+            display: flex;
+            align-items: center;
+            gap: 0;
+            white-space: nowrap;
+            animation: tickerMove 40s linear infinite;
+            height: 100%;
+        }
+
+        @keyframes tickerMove {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+
+        .ticker-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0 28px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: rgba(255,255,255,0.75);
+            border-right: 1px solid var(--glass-border);
+            height: 100%;
+        }
+
+        .ticker-item .t-name { color: white; font-weight: 900; }
+        .ticker-item .t-icon { font-size: 1rem; }
+
+        /* ── STATUS BAR ───────────────────────── */
+        .status-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 6px 24px;
+            background: rgba(0,0,0,0.5);
+            border-top: 1px solid var(--glass-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            font-weight: 600;
+            z-index: 10;
+        }
+
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--success);
+            display: inline-block;
+            margin-right: 7px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        /* fade-in helper */
+        .fade-in { animation: fadeIn 0.5s ease-out both; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        /* Attendance List Styles */
+        .attendance-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 16px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            margin-bottom: 8px;
+        }
+        .attendance-name {
+            font-size: 1.1rem;
+            font-weight: 800;
+        }
+        .attendance-time {
+            font-size: 0.9rem;
+            font-weight: 900;
+            color: var(--accent);
+            background: rgba(139,92,246,0.1);
+            padding: 2px 8px;
+            border-radius: 6px;
+            border: 1px solid rgba(139,92,246,0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="board" id="board">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-logo">✦ NSMS - Neualm - Nachmi</div>
+            <div class="header-title">Infotafel</div>
+            <div class="header-right">
+                <div class="countdown-pill" id="countdown-pill">
+                    <span>🎂</span>
+                    <span id="countdown-text">Lade...</span>
+                </div>
+                <div class="clock" id="clock">00:00</div>
+            </div>
+        </header>
+
+        <!-- Left: All Kids -->
+        <div class="card birthday-card">
+            <div class="card-header">
+                <div class="card-icon">🎈</div>
+                <div class="card-title">GEBURTSTAGE</div>
+            </div>
+            <div class="card-content">
+                <div class="scroll-band" id="scroll-band">
+                    <div class="scroll-band-inner" id="scroll-band-inner"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Center -->
+        <div class="center-col">
+            <!-- Wer ist heute da? (Attendance) -->
+            <div class="card attendance-card" style="flex:1.2;">
+                <div class="card-header">
+                    <div class="card-icon">👥</div>
+                    <div class="card-title">WER IST HEUTE DA?</div>
+                </div>
+                <div class="card-content" id="attendance-list">
+                    <div class="empty-state"><span>Wird geladen...</span></div>
+                </div>
+            </div>
+
+            <!-- Tagesplan -->
+            <div class="card tagesplan-card" style="flex:1;">
+                <div class="card-header">
+                    <div class="card-icon">📅</div>
+                    <div class="card-title">TAGESPLAN</div>
+                </div>
+                <div class="card-content">
+                    <div id="today-plan-list" class="today-plan-content">
+                        Lade Plan...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Aktuelle Projekte -->
+            <div class="card projects-card" style="flex:1;">
+                <div class="card-header">
+                    <div class="card-icon">🚀</div>
+                    <div class="card-title">AKTUELLE PROJEKTE</div>
+                </div>
+                <div class="card-content">
+                    <div id="projects-list" class="projects-content">
+                        Lade Projekte...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: VIP & Daily Notes -->
+        <div class="right-col">
+            <div class="card vip-card">
+                <div class="card-header">
+                    <div class="card-icon">🏆</div>
+                    <div class="card-title">Schüler d. Woche</div>
+                </div>
+                <div class="card-content" id="vip-list" style="gap: 8px;">
+                    <div class="empty-state"><div class="empty-icon">⭐</div><span>Kein VIP</span></div>
+                </div>
+            </div>
+
+            <div class="card daily-notes-card" style="flex:1;">
+                <div class="card-header">
+                    <div class="card-icon">📝</div>
+                    <div class="card-title">Wichtiges für heute</div>
+                </div>
+                <div class="card-content daily-notes-content" id="daily-notes-list">
+                    Lade Notizen...
+                </div>
+            </div>
+        </div>
+
+        <!-- Aktivitäts-Ticker -->
+        <div class="ticker-bar">
+            <div class="ticker-label">📊 Aktivitäten</div>
+            <div class="ticker-scroll-wrap">
+                <div class="ticker-scroll" id="ticker-scroll">
+                    <div class="ticker-item"><span class="t-icon">⏳</span> Lade Aktivitäten...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="status-bar">
+        <div><span class="status-dot"></span>Live</div>
+        <div id="last-updated">Wird geladen...</div>
+        <div>🔄 alle 30 Sek.</div>
+    </div>
+
+    <script src="display.js"></script>
+</body>
+</html>
