@@ -276,7 +276,7 @@ function renderStudentOfTheWeek() {
                 <div class="vip-star">🏆</div>
                 <div class="vip-avatar-big">${s.avatar||s.name.charAt(0)}</div>
                 <div class="vip-info-horizontal">
-                    <div class="vip-name-big" style="font-size: 1.8rem;">${s.name}</div>
+                    <div class="vip-name-big">${s.name}</div>
                     ${dayText ? `<div class="vip-days-big" style="width:fit-content;">${dayText}</div>` : ''}
                 </div>
             </div>`;
