@@ -206,7 +206,7 @@ function renderAttendance() {
     present.sort((a,b) => (a.departureTime || '99:99').localeCompare(b.departureTime || '99:99'));
 
     const html = present.map(s => `
-        <div class="attendance-item fade-in" data-time="${s.departureTime || ''}">
+        <div class="attendance-item fade-in">
             <span class="attendance-name">${s.name}</span>
             <span class="attendance-time">${s.departureTime || '--:--'}</span>
         </div>

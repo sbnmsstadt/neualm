@@ -821,17 +821,6 @@
             border-radius: 6px;
             border: 1px solid rgba(139,92,246,0.3);
         }
-        /* Color coding for specific times */
-        .attendance-item[data-time="15:30"] .attendance-time {
-            background: rgba(16, 185, 129, 0.2);
-            color: #34d399;
-            border-color: rgba(16, 185, 129, 0.4);
-        }
-        .attendance-item[data-time="16:30"] .attendance-time {
-            background: rgba(245, 158, 11, 0.2);
-            color: #fbbf24;
-            border-color: rgba(245, 158, 11, 0.4);
-        }
     </style>
 </head>
 <body>
@@ -849,29 +838,15 @@
             </div>
         </header>
 
-        <!-- Left Column -->
-        <div class="left-col">
-            <!-- Schüler d. Woche (VIP) -->
-            <div class="card vip-card" style="flex: 0 0 auto;">
-                <div class="card-header">
-                    <div class="card-icon">🏆</div>
-                    <div class="card-title">Schüler d. Woche</div>
-                </div>
-                <div class="card-content" id="vip-list" style="gap: 8px;">
-                    <div class="empty-state"><div class="empty-icon">⭐</div><span>Kein VIP</span></div>
-                </div>
+        <!-- Left: All Kids -->
+        <div class="card birthday-card">
+            <div class="card-header">
+                <div class="card-icon">🎈</div>
+                <div class="card-title">GEBURTSTAGE</div>
             </div>
-
-            <!-- Geburtstage -->
-            <div class="card birthday-card" style="flex: 1;">
-                <div class="card-header">
-                    <div class="card-icon">🎈</div>
-                    <div class="card-title">GEBURTSTAGE</div>
-                </div>
-                <div class="card-content">
-                    <div class="scroll-band" id="scroll-band">
-                        <div class="scroll-band-inner" id="scroll-band-inner"></div>
-                    </div>
+            <div class="card-content">
+                <div class="scroll-band" id="scroll-band">
+                    <div class="scroll-band-inner" id="scroll-band-inner"></div>
                 </div>
             </div>
         </div>
