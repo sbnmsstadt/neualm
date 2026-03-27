@@ -14,8 +14,8 @@ export default {
             return new Response(null, { headers: corsHeaders });
         }
 
-        if (!env.DATABASE) {
-            return new Response("KV Namespace 'DATABASE' is not bound. Please check your Cloudflare settings.", {
+        if (!env.NEUALM_DB) {
+            return new Response("KV Namespace 'NEUALM_DB' is not bound. Please check your Cloudflare settings.", {
                 status: 500,
                 headers: corsHeaders
             });
@@ -69,7 +69,7 @@ export default {
                 });
             }
             if (path === "/api/settings" && method === "GET") {
-                const settingsRaw = await env.DATABASE.get("settings");
+                const settingsRaw = await env.NEUALM_DB.get("settings");
                 const defaultActivities = [
                     { label: "Sport-AG", emoji: "🏀" },
                     { label: "Hausaufgaben", emoji: "📝" },
@@ -97,14 +97,14 @@ export default {
 
             if (path === "/api/settings" && method === "PUT") {
                 const settings = await request.json();
-                await env.DATABASE.put("settings", JSON.stringify(settings));
+                await env.NEUALM_DB.put("settings", JSON.stringify(settings));
                 return new Response(JSON.stringify(settings), {
                     headers: { ...corsHeaders, "Content-Type": "application/json" }
                 });
             }
 
             if (path === "/api/settings/group-approve" && method === "POST") {
-                const settingsRaw = await env.DATABASE.get("settings");
+                const settingsRaw = await env.NEUALM_DB.get("settings");
                 let settings = JSON.parse(settingsRaw || "{}");
                 
                 if (settings.groupReward) {
@@ -117,11 +117,11 @@ export default {
                         active: true
                     };
 
-                    await env.DATABASE.put("settings", JSON.stringify(settings));
+                    await env.NEUALM_DB.put("settings", JSON.stringify(settings));
                 }
 
                 // Update all donors (Milestone achieved!)
-                const studentsRaw = await env.DATABASE.get("students");
+                const studentsRaw = await env.NEUALM_DB.get("students");
                 let students = JSON.parse(studentsRaw || "[]");
                 const today = new Date().toISOString().split('T')[0];
                 let changed = false;
@@ -136,7 +136,7 @@ export default {
                 });
 
                 if (changed) {
-                    await env.DATABASE.put("students", JSON.stringify(students));
+                    await env.NEUALM_DB.put("students", JSON.stringify(students));
                 }
 
                 return new Response(JSON.stringify({ settings }), {
@@ -145,13 +145,13 @@ export default {
             }
 
             if (path === "/api/settings/group-reset" && method === "POST") {
-                const settingsRaw = await env.DATABASE.get("settings");
+                const settingsRaw = await env.NEUALM_DB.get("settings");
                 let settings = JSON.parse(settingsRaw || "{}");
                 
                 if (settings.groupReward) {
                     settings.groupReward.current = 0;
                     settings.groupReward.isApproved = false;
-                    await env.DATABASE.put("settings", JSON.stringify(settings));
+                    await env.NEUALM_DB.put("settings", JSON.stringify(settings));
                 }
                 
                 return new Response(JSON.stringify({ settings }), {
@@ -160,7 +160,7 @@ export default {
             }
 
             if (path === "/api/rewards" && method === "GET") {
-                const rewardsRaw = await env.DATABASE.get("rewards");
+                const rewardsRaw = await env.NEUALM_DB.get("rewards");
                 const rewards = rewardsRaw ? JSON.parse(rewardsRaw) : DEFAULT_REWARDS;
                 return new Response(JSON.stringify(rewards), {
                     headers: { ...corsHeaders, "Content-Type": "application/json" }
@@ -171,14 +171,14 @@ export default {
                 const rewards = await request.json();
                 // Sort by threshold automatically
                 rewards.sort((a, b) => a.threshold - b.threshold);
-                await env.DATABASE.put("rewards", JSON.stringify(rewards));
+                await env.NEUALM_DB.put("rewards", JSON.stringify(rewards));
                 return new Response(JSON.stringify(rewards), {
                     headers: { ...corsHeaders, "Content-Type": "application/json" }
                 });
             }
 
             if (path === "/api/students" && method === "GET") {
-                const studentsRaw = await env.DATABASE.get("students");
+                const studentsRaw = await env.NEUALM_DB.get("students");
                 const students = studentsRaw ? JSON.parse(studentsRaw) : [];
                 return new Response(JSON.stringify(students), {
                     headers: { ...corsHeaders, "Content-Type": "application/json" }
@@ -187,7 +187,7 @@ export default {
 
             if (path.startsWith("/api/students/") && method === "GET") {
                 const id = path.split("/").pop();
-                const studentsRaw = await env.DATABASE.get("students");
+                const studentsRaw = await env.NEUALM_DB.get("students");
                 const students = JSON.parse(studentsRaw || "[]");
                 const student = students.find(s => String(s.id) === String(id));
 
@@ -199,7 +199,7 @@ export default {
 
             if (path === "/api/students" && method === "POST") {
                 const { name, birthday, attendanceDays, departureTime } = await request.json();
-                const studentsRaw = await env.DATABASE.get("students");
+                const studentsRaw = await env.NEUALM_DB.get("students");
                 let students = studentsRaw ? JSON.parse(studentsRaw) : [];
 
                 // Generate 3-letter ID from name
@@ -228,7 +228,7 @@ export default {
                     redemptions: {} 
                 };
                 students.push(newStudent);
-                await env.DATABASE.put("students", JSON.stringify(students));
+                await env.NEUALM_DB.put("students", JSON.stringify(students));
 
                 return new Response(JSON.stringify(newStudent), {
                     status: 201,
@@ -244,7 +244,7 @@ export default {
                     const id = pathParts[3];
                     const body = await request.json();
                     const { stamps, avatar, badges, reason, attendanceDays, departureTime } = body;
-                    const studentsRaw = await env.DATABASE.get("students");
+                    const studentsRaw = await env.NEUALM_DB.get("students");
                     let students = JSON.parse(studentsRaw || "[]");
 
                     const index = students.findIndex(s => String(s.id) === String(id));
@@ -271,7 +271,7 @@ export default {
                     if (attendanceDays !== undefined) students[index].attendanceDays = attendanceDays;
                     if (departureTime !== undefined) students[index].departureTime = departureTime;
 
-                    await env.DATABASE.put("students", JSON.stringify(students));
+                    await env.NEUALM_DB.put("students", JSON.stringify(students));
                     return new Response(JSON.stringify(students[index]), {
                         headers: { ...corsHeaders, "Content-Type": "application/json" }
                     });
@@ -283,7 +283,7 @@ export default {
                 const pathParts = path.split("/");
                 const id = pathParts[3];
                 const { threshold, status } = await request.json();
-                const studentsRaw = await env.DATABASE.get("students");
+                const studentsRaw = await env.NEUALM_DB.get("students");
                 let students = JSON.parse(studentsRaw || "[]");
 
                 const index = students.findIndex(s => String(s.id) === String(id));
@@ -313,7 +313,7 @@ export default {
                     students[index].redemptions[threshold] = "pending";
 
                     // TELEGRAM NOTIFICATION
-                    const rewardsRaw = await env.DATABASE.get("rewards");
+                    const rewardsRaw = await env.NEUALM_DB.get("rewards");
                     const rewards = rewardsRaw ? JSON.parse(rewardsRaw) : DEFAULT_REWARDS;
                     const reward = rewards.find(r => r.threshold === parseInt(threshold));
                     const rewardName = reward ? reward.title : `Belohnung (${threshold} Stempel)`;
@@ -345,23 +345,23 @@ export default {
                     }
 
                     // --- NEW: If reward title is "Filmtag", activate/increment group progress ---
-                    const rewardsRaw = await env.DATABASE.get("rewards");
+                    const rewardsRaw = await env.NEUALM_DB.get("rewards");
                     const rewards = rewardsRaw ? JSON.parse(rewardsRaw) : DEFAULT_REWARDS;
                     const reward = rewards.find(r => r.threshold === parseInt(threshold));
                     const rewardName = reward ? reward.title : `Belohnung (${threshold} Stempel)`;
 
                     if (rewardName.toLowerCase().includes("filmtag")) {
-                        const settingsRaw = await env.DATABASE.get("settings");
+                        const settingsRaw = await env.NEUALM_DB.get("settings");
                         let settings = JSON.parse(settingsRaw || "{}");
                         if (settings.groupReward) {
                             settings.groupReward.current = (settings.groupReward.current || 0) + parseInt(threshold);
                             settings.groupReward.active = true;
-                            await env.DATABASE.put("settings", JSON.stringify(settings));
+                            await env.NEUALM_DB.put("settings", JSON.stringify(settings));
                         }
                     }
                 }
 
-                await env.DATABASE.put("students", JSON.stringify(students));
+                await env.NEUALM_DB.put("students", JSON.stringify(students));
                 return new Response(JSON.stringify(students[index]), {
                     headers: { ...corsHeaders, "Content-Type": "application/json" }
                 });
@@ -371,7 +371,7 @@ export default {
             if (path.includes("/group-contribute") && method === "POST") {
                 const pathParts = path.split("/");
                 const id = pathParts[3];
-                const studentsRaw = await env.DATABASE.get("students");
+                const studentsRaw = await env.NEUALM_DB.get("students");
                 let students = JSON.parse(studentsRaw || "[]");
                 const index = students.findIndex(s => String(s.id) === String(id));
 
@@ -387,7 +387,7 @@ export default {
                     const freeStamps = student.stamps - usedStamps;
 
                     // NEW: Check if group reward is ACTIVE
-                    const settingsRaw = await env.DATABASE.get("settings");
+                    const settingsRaw = await env.NEUALM_DB.get("settings");
                     let settings = JSON.parse(settingsRaw || "{}");
                     
                     if (!settings.groupReward || !settings.groupReward.active) {
@@ -408,8 +408,8 @@ export default {
                         
                         settings.groupReward.current = (settings.groupReward.current || 0) + 1;
                         
-                        await env.DATABASE.put("students", JSON.stringify(students));
-                        await env.DATABASE.put("settings", JSON.stringify(settings));
+                        await env.NEUALM_DB.put("students", JSON.stringify(students));
+                        await env.NEUALM_DB.put("settings", JSON.stringify(settings));
                         
                         return new Response(JSON.stringify(student), {
                             headers: { ...corsHeaders, "Content-Type": "application/json" }
@@ -422,11 +422,11 @@ export default {
 
             if (path.startsWith("/api/students/") && method === "DELETE") {
                 const id = path.split("/").pop();
-                const studentsRaw = await env.DATABASE.get("students");
+                const studentsRaw = await env.NEUALM_DB.get("students");
                 let students = JSON.parse(studentsRaw || "[]");
 
                 students = students.filter(s => String(s.id) !== String(id));
-                await env.DATABASE.put("students", JSON.stringify(students));
+                await env.NEUALM_DB.put("students", JSON.stringify(students));
                 return new Response(null, { status: 204, headers: corsHeaders });
             }
 
@@ -434,7 +434,7 @@ export default {
             if (path.includes("/vip") && method === "PATCH") {
                 const id = path.split("/")[3];
                 const { active, reason } = await request.json();
-                const studentsRaw = await env.DATABASE.get("students");
+                const studentsRaw = await env.NEUALM_DB.get("students");
                 let students = JSON.parse(studentsRaw || "[]");
                 const index = students.findIndex(s => String(s.id) === String(id));
                 if (index === -1) return new Response("Not Found", { status: 404, headers: corsHeaders });
@@ -451,7 +451,7 @@ export default {
                     reason: active ? `⭐ VIP-Status erhalten${reason ? ': ' + reason : ''}` : "VIP-Status entfernt"
                 });
 
-                await env.DATABASE.put("students", JSON.stringify(students));
+                await env.NEUALM_DB.put("students", JSON.stringify(students));
                 return new Response(JSON.stringify(students[index]), {
                     headers: { ...corsHeaders, "Content-Type": "application/json" }
                 });
@@ -464,17 +464,17 @@ export default {
     },
 
     async scheduled(event, env, ctx) {
-        if (!env.DATABASE || !env.TELEGRAM_TOKEN || !env.TELEGRAM_CHAT_ID) {
+        if (!env.NEUALM_DB || !env.TELEGRAM_TOKEN || !env.TELEGRAM_CHAT_ID) {
             console.error("Missing DB or Telegram credentials");
             return;
         }
 
         try {
-            const studentsRaw = await env.DATABASE.get("students");
+            const studentsRaw = await env.NEUALM_DB.get("students");
             if (!studentsRaw) return;
             let students = JSON.parse(studentsRaw);
 
-            const settingsRaw = await env.DATABASE.get("settings");
+            const settingsRaw = await env.NEUALM_DB.get("settings");
             const settings = settingsRaw ? JSON.parse(settingsRaw) : {};
             const vipDuration = settings.vipDurationDays || 3;
 
@@ -511,7 +511,7 @@ export default {
             }
 
             if (studentsChanged) {
-                await env.DATABASE.put("students", JSON.stringify(students));
+                await env.NEUALM_DB.put("students", JSON.stringify(students));
             }
 
             // --- 2. Check Birthdays (this week) ---
