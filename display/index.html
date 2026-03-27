@@ -792,30 +792,41 @@
             from { opacity: 0; transform: translateY(6px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        /* Attendance List Styles */
+        /* Attendance List Styles (3-column grid) */
+        #attendance-list {
+            display: grid !important;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            align-content: flex-start;
+        }
         .attendance-item {
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            padding: 8px 14px;
+            gap: 8px;
+            padding: 6px 12px;
             background: rgba(255,255,255,0.04);
             border: 1px solid var(--glass-border);
             border-radius: 10px;
-            margin-bottom: 6px;
-            transition: transform 0.2s;
+            transition: transform 0.2s, background 0.2s;
+            min-width: 0;
+            white-space: nowrap;
         }
         .attendance-item:hover {
             background: rgba(255,255,255,0.08);
-            transform: translateX(4px);
+            transform: scale(1.02);
         }
         .attendance-name {
-            font-size: 1.1rem;
+            font-size: 0.95rem;
             font-weight: 800;
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         .attendance-time {
-            font-size: 0.9rem;
+            font-size: 0.8rem;
             font-weight: 900;
             color: var(--accent);
+            flex-shrink: 0;
             background: rgba(139,92,246,0.1);
             padding: 2px 8px;
             border-radius: 6px;
@@ -849,15 +860,29 @@
             </div>
         </header>
 
-        <!-- Left: All Kids -->
-        <div class="card birthday-card">
-            <div class="card-header">
-                <div class="card-icon">🎈</div>
-                <div class="card-title">GEBURTSTAGE</div>
+        <!-- Left Column -->
+        <div class="left-col">
+            <!-- Schüler d. Woche (VIP) -->
+            <div class="card vip-card" style="flex: 0 0 auto;">
+                <div class="card-header">
+                    <div class="card-icon">🏆</div>
+                    <div class="card-title">Schüler d. Woche</div>
+                </div>
+                <div class="card-content" id="vip-list" style="gap: 8px;">
+                    <div class="empty-state"><div class="empty-icon">⭐</div><span>Kein VIP</span></div>
+                </div>
             </div>
-            <div class="card-content">
-                <div class="scroll-band" id="scroll-band">
-                    <div class="scroll-band-inner" id="scroll-band-inner"></div>
+
+            <!-- Geburtstage -->
+            <div class="card birthday-card" style="flex: 1;">
+                <div class="card-header">
+                    <div class="card-icon">🎈</div>
+                    <div class="card-title">GEBURTSTAGE</div>
+                </div>
+                <div class="card-content">
+                    <div class="scroll-band" id="scroll-band">
+                        <div class="scroll-band-inner" id="scroll-band-inner"></div>
+                    </div>
                 </div>
             </div>
         </div>
