@@ -205,12 +205,19 @@ function renderAttendance() {
     // Sort by departure time (greedy sort)
     present.sort((a,b) => (a.departureTime || '99:99').localeCompare(b.departureTime || '99:99'));
 
-    const html = present.map(s => `
-        <div class="attendance-item fade-in">
-            <span class="attendance-name">${s.name}</span>
-            <span class="attendance-time">${s.departureTime || '--:--'}</span>
-        </div>
-    `).join('');
+    const html = present.map(s => {
+        let timeClass = '';
+        if (s.departureTime === '15:30') timeClass = 'time-green';
+        else if (s.departureTime === '16:30') timeClass = 'time-blue';
+        else if (s.departureTime) timeClass = 'time-purple';
+
+        return `
+            <div class="attendance-item fade-in">
+                <span class="attendance-name">${s.name}</span>
+                <span class="attendance-time ${timeClass}">${s.departureTime || '--:--'}</span>
+            </div>
+        `;
+    }).join('');
 
     el.innerHTML = html;
 }

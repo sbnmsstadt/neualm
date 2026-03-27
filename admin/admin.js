@@ -463,7 +463,7 @@ function renderAdminList(filter = "") {
 
         const days = student.attendanceDays || [];
         const dayBadges = ['Mo', 'Di', 'Mi', 'Do', 'Fr'].map(d => 
-            `<span style="font-size:0.65rem; padding:2px 4px; border-radius:4px; background:${days.includes(d) ? 'var(--primary-light)' : 'rgba(255,255,255,0.05)'}; opacity:${days.includes(d) ? '1' : '0.3'}; margin-right:2px;">${d}</span>`
+            `<span style="font-size:0.65rem; padding:2px 4px; border-radius:4px; background:${days.includes(d) ? 'var(--primary-light)' : 'rgba(255,255,255,0.05)'}; color:${days.includes(d) ? '#002244' : 'white'}; opacity:${days.includes(d) ? '1' : '0.3'}; margin-right:2px; font-weight:800;">${d}</span>`
         ).join('');
 
         item.innerHTML = `

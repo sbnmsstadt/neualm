@@ -183,6 +183,24 @@ header {
     cursor: pointer;
 }
 
+.btn-time-select {
+    flex: 1;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid var(--glass-border);
+    color: white;
+    padding: 6px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-time-select:hover {
+    background: var(--primary);
+    border-color: var(--primary-light);
+}
+
 .icon-btn-small {
     background: rgba(255,255,255,0.05);
     border: 1px solid var(--glass-border);
@@ -212,6 +230,7 @@ input[type="text"], input[type="number"], input[type="date"] {
 input[type=number]::-webkit-inner-spin-button, 
 input[type=number]::-webkit-outer-spin-button { 
   -webkit-appearance: none; 
+  appearance: none;
   margin: 0; 
 }
 input[type=number] {
