@@ -771,3 +771,136 @@ input[type="number"] {
     border: 1px solid rgba(255,255,255,0.1);
 }
 
+/* Tamagotchi Interaction Feedback */
+.tama-interact-pulse {
+    animation: tamaPulse 1.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes tamaPulse {
+    0% { transform: scale(1); }
+    30% { transform: scale(1.6) translateY(-10px); filter: drop-shadow(0 0 15px var(--success)); }
+    100% { transform: scale(1); }
+}
+
+.tama-toast {
+    position: fixed;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg-card);
+    border: 1px solid var(--success);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 50px;
+    font-weight: 800;
+    font-size: 0.9rem;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 20px hsla(142, 70%, 45%, 0.3);
+    z-index: 10000;
+    animation: toastUp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), toastDown 0.5s 2s forwards;
+    white-space: nowrap;
+}
+
+@keyframes toastUp {
+    from { bottom: -100px; opacity: 0; }
+    to { bottom: 40px; opacity: 1; }
+}
+
+@keyframes toastDown {
+    from { bottom: 40px; opacity: 1; }
+    to { bottom: -100px; opacity: 0; }
+}
+
+/* --- Tamagotchi Tears & Particles --- */
+.tear-particle {
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    pointer-events: none;
+    z-index: 1000;
+    animation: tearSpray 1.5s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
+}
+
+@keyframes tearSpray {
+    0% {
+        transform: translate(0, 0) scale(0.5);
+        opacity: 1;
+    }
+    30% {
+        transform: translate(var(--vx), -20px) scale(1.2);
+        opacity: 1;
+    }
+    100% {
+        transform: translate(calc(var(--vx) * 2), 60px) scale(0.8);
+        opacity: 0;
+    }
+}
+
+.zzz-particle {
+    position: absolute;
+    font-family: 'Press Start 2P', cursive;
+    color: #a5f3fc;
+    font-size: 0.8rem;
+    font-weight: bold;
+    pointer-events: none;
+    animation: zzzFloat 3s ease-out forwards;
+    z-index: 999;
+}
+
+@keyframes zzzFloat {
+    0% { transform: translate(0,0) scale(0.5); opacity: 0; }
+    20% { opacity: 1; }
+    100% { transform: translate(20px, -60px) scale(1.5); opacity: 0; }
+}
+
+/* --- Poop Steam --- */
+.poop-wrapper {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    pointer-events: none;
+}
+
+.poop-steam {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.4);
+    filter: blur(1px);
+    animation: poopFloat 2s ease-in-out infinite;
+    margin-bottom: -5px;
+}
+
+@keyframes poopFloat {
+    0% { transform: translateY(0) scale(1); opacity: 0; }
+    50% { transform: translateY(-15px) scale(1.2); opacity: 0.5; }
+    100% { transform: translateY(-30px) scale(1.5); opacity: 0; }
+}
+/* Tamagotchi Idle Animations */
+@keyframes pixelWalk {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+}
+
+@keyframes pixelFlip {
+    0% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-50px) rotate(180deg); }
+    100% { transform: translateY(0) rotate(360deg); }
+}
+
+@keyframes pixelRoll {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes pixelHopHorizontal {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-30px); }
+}
+
+.tama-walking { animation: pixelWalk 0.6s ease-in-out infinite !important; }
+.tama-flipping { animation: pixelFlip 0.8s ease-in-out !important; }
+.tama-rolling { animation: pixelRoll 0.5s linear infinite !important; }
+.tama-hopping { animation: pixelHopHorizontal 0.7s ease-in-out infinite !important; }

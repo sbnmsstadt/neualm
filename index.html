@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NACHMI MS NEUALM - Next Level</title>
+    <title>NACHMI MS-STADT - Next Level</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -163,6 +163,73 @@
                 </div>
             </div>
 
+            <!-- Tamagotchi Care (Student View) -->
+            <div id="tamagotchi-section" class="glass-card mb-4 p-4 hidden" style="margin-top: 2rem; border-color: rgba(255,255,255,0.1); background: rgba(0,0,0,0.1);">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+                    <div id="tama-ui-avatar" style="font-size: 2.2rem;">🐣</div>
+                    <div style="flex: 1;">
+                        <h3 id="tama-ui-name" style="font-size: 0.85rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; margin: 0; color: white;">Pixelino</h3>
+                        <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+                            <span id="tama-ui-level" style="font-size: 0.6rem; background: #f59e0b; color: #000; padding: 2px 6px; border-radius: 4px; font-weight: 900;">LVL 1</span>
+                            <div style="flex: 1; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden;">
+                                <div id="tama-ui-xp-bar" style="width: 0%; height: 100%; background: #fbbf24;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px;">
+                    <button onclick="careForTama('handwash')" class="add-stamp-btn" style="padding: 8px; font-size: 0.55rem; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); flex-direction: column; height: auto; border-radius: 12px; position:relative;">
+                        <span style="font-size: 1.2rem; display: block;">🧼</span> Hände
+                        <div id="handwash-timer" style="position:absolute; top:-5px; right:-5px; background:var(--success); color:white; font-size:0.5rem; padding:2px 4px; border-radius:4px; display:none;">60s</div>
+                    </button>
+                    
+                    <!-- Nutrition Picker: Apple vs Donut -->
+                    <div style="grid-column: span 2; display: flex; gap: 4px; padding: 4px; background: rgba(255,255,255,0.05); border-radius: 12px;">
+                        <button onclick="careForTama('feed', 'apple')" class="add-stamp-btn" style="padding: 4px; font-size: 0.5rem; background: none; border: none; flex-direction: column; height: auto; flex: 1;">
+                            <span style="font-size: 1.1rem; display: block;">🍎</span> Apfel
+                        </button>
+                        <button onclick="careForTama('feed', 'donut')" class="add-stamp-btn" style="padding: 4px; font-size: 0.5rem; background: none; border: none; flex-direction: column; height: auto; flex: 1;">
+                            <span style="font-size: 1.1rem; display: block;">🍩</span> Donut
+                        </button>
+                    </div>
+
+                    <button onclick="careForTama('water')" class="add-stamp-btn" style="padding: 8px; font-size: 0.6rem; background: rgba(255,255,255,0.05); flex-direction: column; height: auto; border-radius: 12px;">
+                        <span style="font-size: 1.2rem; display: block;">💧</span> Trinken
+                    </button>
+
+                    <button id="btn-brush" onclick="careForTama('brush')" class="add-stamp-btn hidden" style="padding: 8px; font-size: 0.6rem; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); flex-direction: column; height: auto; border-radius: 12px;">
+                        <span style="font-size: 1.2rem; display: block;">🪥</span> Putzen
+                    </button>
+                    
+                    <button id="btn-recycle" onclick="careForTama('recycle')" class="add-stamp-btn hidden" style="padding: 8px; font-size: 0.6rem; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); flex-direction: column; height: auto; border-radius: 12px;">
+                        <span style="font-size: 1.2rem; display: block;">🗑️</span> Müll
+                    </button>
+
+                    <button onclick="careForTama('clean')" class="add-stamp-btn" style="padding: 8px; font-size: 0.6rem; background: rgba(255,255,255,0.05); flex-direction: column; height: auto; border-radius: 12px;">
+                        <span style="font-size: 1.2rem; display: block;">🚿</span> Duschen
+                    </button>
+                    <button onclick="careForTama('play')" class="add-stamp-btn" style="padding: 8px; font-size: 0.6rem; background: rgba(255,255,255,0.05); flex-direction: column; height: auto; border-radius: 12px;">
+                        <span style="font-size: 1.2rem; display: block;">🧶</span> Spielen
+                    </button>
+                    <button onclick="careForTama('love')" class="add-stamp-btn" style="padding: 8px; font-size: 0.6rem; background: rgba(255,255,255,0.05); flex-direction: column; height: auto; border-radius: 12px;">
+                        <span style="font-size: 1.2rem; display: block;">❤️</span> Liebe
+                    </button>
+                    <button onclick="careForTama('read')" class="add-stamp-btn" style="padding: 8px; font-size: 0.6rem; background: rgba(255,255,255,0.05); flex-direction: column; height: auto; border-radius: 12px;">
+                        <span style="font-size: 1.2rem; display: block;">📖</span> Lesen
+                    </button>
+                    <button onclick="careForTama('homework')" class="add-stamp-btn" style="padding: 8px; font-size: 0.6rem; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); flex-direction: column; height: auto; border-radius: 12px;">
+                        <span style="font-size: 1.2rem; display: block;">📝</span> Hausaufgabe
+                    </button>
+                    <button onclick="careForTama('train')" class="add-stamp-btn" style="padding: 8px; font-size: 0.6rem; background: rgba(255,255,255,0.05); flex-direction: column; height: auto; border-radius: 12px;">
+                        <span style="font-size: 1.2rem; display: block;">🧠</span> Lernen
+                    </button>
+                </div>
+                
+                <p id="tama-limit-text" style="font-size: 0.55rem; text-align: center; margin-top: 10px; color: rgba(255,255,255,0.3); font-weight: 700; font-style: italic;">
+                    Kostenlos (Max. 2x am Tag)
+                </p>
+            </div>
 
             <div class="reward-section" style="margin-top: 2.5rem;">
                 <h3>🎁 Deine Belohnungen</h3>

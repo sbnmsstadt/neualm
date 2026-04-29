@@ -240,7 +240,7 @@ const Logbook = {
             }
             
             if (response.ok) {
-                content.innerHTML = data.text;
+                content.textContent = data.text;
                 
                 const archiveBtn = document.getElementById('archive-summary-btn');
                 const regenBtn = document.getElementById('regenerate-summary-btn');
@@ -278,7 +278,7 @@ const Logbook = {
     },
 
     async archiveSummary() {
-        const content = document.getElementById('summary-content').innerHTML;
+        const content = document.getElementById('summary-content').textContent;
         const btn = document.getElementById('archive-summary-btn');
         const notice = document.getElementById('archived-notice');
 

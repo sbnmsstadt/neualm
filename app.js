@@ -1,7 +1,7 @@
-const API_URL = "https://neualm-infotafel.sb-nmsstadt.workers.dev/api";
-const PIN_ADMIN = "5400"; 
-const PIN_STAMP = "5400"; 
-const PIN_SUPERVISOR = "5400"; 
+const API_URL = "https://stempelkarte.sb-nmsstadt.workers.dev/api";
+const PIN_ADMIN = "8520"; 
+const PIN_STAMP = "1591"; 
+const PIN_SUPERVISOR = "1591"; 
 
 const MAX_STAMPS = 9999;
 const STAMPS_PER_LEVEL = 20;
@@ -130,7 +130,7 @@ async function silentSync() {
                 SETTINGS = freshSettings;
                 updateStampDisplay(currentStudent);
                 renderRewards(currentStudent);
-
+                renderTamagotchiUI(SETTINGS.tamagotchi, currentStudent);
                 // Also update home screen if needed (community goal)
                 updateCommunityGoal(null, freshSettings); 
             }
@@ -263,7 +263,17 @@ function showDetail(student) {
         renderBadges(student);
         renderHistory(student.history || []);
         
-
+        // --- Tamagotchi Sync ---
+        // Use existing SETTINGS from sync/initial
+        if (SETTINGS && SETTINGS.tamagotchi) {
+            renderTamagotchiUI(SETTINGS.tamagotchi, student);
+        } else {
+            // Fallback just in case
+            fetch(`${API_URL}/settings`).then(r => r.json()).then(set => {
+                SETTINGS = set;
+                renderTamagotchiUI(SETTINGS.tamagotchi, student);
+            });
+        }
     const aiSection = document.getElementById('ai-section');
     const aiText = document.getElementById('ai-motivation-student');
     if (aiSection && aiText) {
@@ -318,7 +328,29 @@ function showDetail(student) {
         }
     }
 
+    // Tamagotchi Section
+    const tamaSection = document.getElementById('tamagotchi-section');
+    const tamaName = document.getElementById('tama-ui-name');
+    const tamaAvatar = document.getElementById('tama-ui-avatar');
 
+    if (tamaSection && SETTINGS.tamagotchi && SETTINGS.tamagotchi.status === "hatched") {
+        tamaSection.classList.remove('hidden');
+        if (tamaName) tamaName.innerText = SETTINGS.tamagotchi.name || "Pixelino";
+        
+        let avatar = "🐣";
+        const stage = SETTINGS.tamagotchi.stage;
+        if (stage === "baby") avatar = "🐣";
+        else if (stage === "child") avatar = "🐥";
+        else if (stage === "teen") avatar = "🐦";
+        else if (stage === "adult") avatar = "🦉";
+        
+        if (SETTINGS.tamagotchi.stats.hunger < 20 || SETTINGS.tamagotchi.stats.thirst < 20) avatar = "🤒";
+        else if (SETTINGS.tamagotchi.stats.love < 30) avatar = "😢";
+        
+        if (tamaAvatar) tamaAvatar.innerText = avatar;
+    } else if (tamaSection) {
+        tamaSection.classList.add('hidden');
+    }
 }
 
 function renderRewards(student) {
@@ -1106,12 +1138,192 @@ async function openBadgeInfo() {
 function closeBadgeInfoOverlay() {
     document.getElementById('badge-info-overlay').classList.remove('active');
 }
+function renderTamagotchiUI(tama, student) {
+    const section = document.getElementById('tamagotchi-section');
+    if (!section) return;
+    
+    if (!tama || (tama.status !== "hatched" && tama.status !== "dead") || tama.visible === false) {
+        section.classList.add('hidden');
+        return;
+    }
+    
+    section.classList.remove('hidden');
+    
+    const isDead = tama.status === "dead";
+    const careGrid = document.querySelector('.tama-care-grid');
+    if (careGrid) {
+        if (isDead) careGrid.style.display = 'none';
+        else careGrid.style.display = 'grid';
+    }
+    
+    const nameEl = document.getElementById('tama-ui-name');
+    const avatarEl = document.getElementById('tama-ui-avatar');
+    const levelEl = document.getElementById('tama-ui-level');
+    const xpBarEl = document.getElementById('tama-ui-xp-bar');
+    const limitText = document.getElementById('tama-limit-text');
+    
+    if (nameEl) nameEl.textContent = tama.name || "Pixelino";
+    if (avatarEl) {
+        if (isDead) {
+            avatarEl.textContent = "👻";
+        } else {
+            let base = (tama.stats.level >= 10) ? "🦖" : "🐣";
+            if (tama.isSleeping) base = "😴";
+            else if (tama.stats.love < 20) base = "😭";
+            else if (tama.stats.hunger < 30 || tama.stats.thirst < 30) base = "😵‍💫";
+            else if (tama.stats.hunger > 80 && tama.stats.love > 80) base = (tama.stats.level >= 10) ? "🐲" : "🐥";
+            avatarEl.textContent = base;
+        }
+    }
+    if (levelEl) {
+        if (isDead) levelEl.textContent = "VERSTORBEN 👻";
+        else levelEl.textContent = `LVL ${tama.stats.level || 1}`;
+    }
+    
+    if (xpBarEl) {
+        const nextLevelXp = (tama.stats.level || 1) * 100;
+        const xpPercent = Math.min(100, ((tama.stats.xp || 0) / nextLevelXp) * 100);
+        xpBarEl.style.width = `${xpPercent}%`;
+    }
+    
+    if (limitText && student.tamaActions) {
+        const today = new Date().toISOString().split('T')[0];
+        const count = student.tamaActions.date === today ? student.tamaActions.count : 0;
+        limitText.textContent = `Limit: ${count}/5 heute genutzt`;
+        if (count >= 5) limitText.style.color = "#ef4444";
+        else limitText.style.color = "rgba(255,255,255,0.3)";
+    }
 
+    // --- Educational Action Butler ---
+    const btnBrush = document.getElementById('btn-brush');
+    const btnRecycle = document.getElementById('btn-recycle');
+    
+    if (btnBrush) {
+        if (tama.needsBrushing) btnBrush.classList.remove('hidden');
+        else btnBrush.classList.add('hidden');
+    }
+    
+    if (btnRecycle) {
+        if (tama.trashCount > 0) btnRecycle.classList.remove('hidden');
+        else btnRecycle.classList.add('hidden');
+    }
+}
 
+async function careForTama(action, subAction = null) {
+    if (!currentStudent) return;
+    
+    // Store subAction temporarily for the request
+    if (action === 'feed' && subAction) {
+        currentStudent.lastSubAction = subAction;
+    }
+    
+    try {
+        const response = await fetch(`${API_URL}/tamagotchi/care`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                studentId: currentStudent.id, 
+                action: action,
+                subAction: subAction // Pass subAction to worker
+            })
+        });
 
+        if (response.ok) {
+            const data = await response.json();
+            currentStudent = data.student;
+            SETTINGS.tamagotchi = data.tamagotchi;
+            
+            const avatar = document.getElementById('tama-ui-avatar');
+            if (avatar) {
+                const originalText = avatar.innerText;
+                avatar.innerText = (action === "handwash") ? "🧼✨" : "✨✔️"; 
+                avatar.style.transform = "scale(1.5) translateY(-5px)";
+                avatar.classList.add('tama-interact-pulse'); 
+                setTimeout(() => {
+                    avatar.innerText = originalText;
+                    avatar.style.transform = "scale(1)";
+                    avatar.classList.remove('tama-interact-pulse');
+                }, 1500);
+            }
+
+            // --- Show a toast notification ---
+            const toast = document.createElement('div');
+            toast.className = 'tama-toast';
+            if (action === "style") {
+                toast.textContent = "Neues Outfit am Start! 🔥 (24h)";
+            } else if (action === "love") {
+                toast.textContent = "Tamagotchi liebt dich! ❤️";
+            } else if (action === "brush") {
+                toast.textContent = "Alles wieder blitzblank geputzt! 🪥✨";
+            } else if (action === "recycle") {
+                toast.textContent = "Super! Du bist ein Umwelt-Profi! 🌍♻️";
+            } else if (action === "feed") {
+                toast.textContent = (subAction === 'donut') ? "Yummy! Aber denk an deine Zähne! 🍩" : "Gesund und lecker! 🍎✨";
+            } else if (action === "clean") {
+                toast.textContent = "Alles wieder blitzblank! 🚿";
+            } else if (action === "handwash") {
+                toast.textContent = "Hände sind sauber! Jetzt darfst du essen! 🧼✨";
+                startHandwashTimer();
+            } else {
+                toast.textContent = "Tamagotchi freut sich! ✨";
+            }
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2500);
+
+            updateStampDisplay(currentStudent);
+            renderRewards(currentStudent);
+            renderHistory(currentStudent.history || []);
+            renderTamagotchiUI(SETTINGS.tamagotchi, currentStudent);
+            
+            // Optional: silent sync to update UI
+            silentSync();
+        } else {
+            const msg = await response.text();
+            if (response.status === 403 && msg.includes("Hände Waschen")) {
+                showTamaReminder(msg);
+            } else {
+                alert(msg); // Show the specific "limit reached" or other error message
+            }
+        }
+    } catch (err) {
+        console.error("Care error:", err);
+        alert("Netzwerkfehler beim Pflegen des Klassentiers.");
+    }
+}
 
 // Custom function for the Tamagotchi "Reminder" Popup
-
+function showTamaReminder(message) {
+    const overlay = document.createElement('div');
+    overlay.className = 'overlay active';
+    overlay.style.zIndex = "10000";
+    overlay.innerHTML = `
+        <div class="glass-card" style="max-width:320px; text-align:center; padding:2rem; animation: bounceIn 0.5s;">
+            <div style="font-size:3rem; margin-bottom:1rem;">🧼🤔</div>
+            <h3 style="color:#fbbf24; margin-bottom:1rem;">Halt Stopp!</h3>
+            <p style="font-size:1.1rem; line-height:1.4; color:white; font-weight:700;">${message}</p>
+            <button onclick="this.closest('.overlay').remove()" class="add-stamp-btn" style="margin-top:1.5rem; width:100%;">Okay, ich wasche sie! 🧼</button>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+}
 
 let handwashInterval = null;
-
+function startHandwashTimer() {
+    const timerEl = document.getElementById('handwash-timer');
+    if (!timerEl) return;
+    
+    clearInterval(handwashInterval);
+    let timeLeft = 60;
+    timerEl.innerText = `${timeLeft}s`;
+    timerEl.style.display = 'block';
+    
+    handwashInterval = setInterval(() => {
+        timeLeft--;
+        if (timeLeft <= 0) {
+            clearInterval(handwashInterval);
+            timerEl.style.display = 'none';
+        } else {
+            timerEl.innerText = `${timeLeft}s`;
+        }
+    }, 1000);
+}

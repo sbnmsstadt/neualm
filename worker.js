@@ -45,7 +45,76 @@ export default {
             }
         }
 
+        // ── TAMAGOTCHI DECAY HELPER ──────────────────────────────────
+        function applyTamagotchiDecay(settings, now) {
+            if (!settings.tamagotchi || settings.tamagotchi.status !== "hatched") return false;
 
+            const last = settings.tamagotchi.lastUpdate || now;
+            const ignoreFreeze = settings.tamagotchi.ignoreWeekendFreeze || false;
+            const activeHours = calculateActiveHours(last, now, ignoreFreeze);
+
+            if (activeHours > 0) {
+                // Base decay: 12.5% per 30 mins = 25% per hour 
+                const baseDecay = activeHours * 25;
+                
+                // Poop penalty: each poop increases LOVE decay by 50%
+                const poopCount = settings.tamagotchi.poopCount || 0;
+                const lovePenaltyFactor = 1 + (poopCount * 0.5);
+                const loveDecay = baseDecay * lovePenaltyFactor;
+
+                settings.tamagotchi.stats.hunger = Math.max(0, settings.tamagotchi.stats.hunger - baseDecay);
+                settings.tamagotchi.stats.thirst = Math.max(0, settings.tamagotchi.stats.thirst - baseDecay);
+                settings.tamagotchi.stats.love = Math.max(0, settings.tamagotchi.stats.love - loveDecay);
+                settings.tamagotchi.stats.fun = Math.max(0, (settings.tamagotchi.stats.fun || 100) - baseDecay);
+                
+                // Hygiene: decay faster if brushing is needed
+                const hygieneDecay = settings.tamagotchi.needsBrushing ? (baseDecay * 1.5) : (baseDecay * 0.5);
+                settings.tamagotchi.stats.hygiene = Math.max(0, (settings.tamagotchi.stats.hygiene || 100) - hygieneDecay);
+
+                // --- Death Logic: If hunger AND thirst reach 0, pet dies ---
+                if (settings.tamagotchi.stats.hunger <= 0 && settings.tamagotchi.stats.thirst <= 0) {
+                    settings.tamagotchi.status = "dead";
+                }
+
+                // --- Sugar Crash Logic (Donut effect) ---
+                if (settings.tamagotchi.sugarCrashTime && now > settings.tamagotchi.sugarCrashTime) {
+                    settings.tamagotchi.stats.hunger = Math.max(0, settings.tamagotchi.stats.hunger - 30);
+                    settings.tamagotchi.stats.fun = Math.max(0, settings.tamagotchi.stats.fun - 30);
+                    settings.tamagotchi.sugarCrashTime = null; // Reset crash
+                }
+
+                // Auto-Sleep if Fun is critically low
+                if (settings.tamagotchi.stats.fun < 15 && !settings.tamagotchi.isSleeping) {
+                    // Check if an interaction just happened (within last 10 seconds)
+                    const lastAction = settings.tamagotchi.lastActionTime ? new Date(settings.tamagotchi.lastActionTime).getTime() : 0;
+                    if (Date.now() - lastAction > 10000) {
+                        settings.tamagotchi.isSleeping = true;
+                    }
+                }
+
+                // Poop & Trash Chance: 250% per active hour (avg 2.5 events/hour)
+                if (Math.random() < 2.5 * activeHours) {
+                    const type = Math.random();
+                    if (type < 0.7) { // 70% Poop, 30% Trash
+                        settings.tamagotchi.poopCount = Math.min(20, (settings.tamagotchi.poopCount || 0) + 1);
+                    } else {
+                        settings.tamagotchi.trashCount = Math.min(20, (settings.tamagotchi.trashCount || 0) + 1);
+                    }
+                }
+
+                // --- Hat Expiration ---
+                if (settings.tamagotchi.currentHat && settings.tamagotchi.hatExpires) {
+                    if (now > settings.tamagotchi.hatExpires) {
+                        settings.tamagotchi.currentHat = null;
+                        settings.tamagotchi.hatExpires = null;
+                    }
+                }
+
+                settings.tamagotchi.lastUpdate = now;
+                return true; // Something changed
+            }
+            return false;
+        }
 
         async function updateWeather(settings, env) {
             const now = Date.now();
@@ -298,11 +367,29 @@ export default {
 
                 await updateWeather(settings, env);
 
-
+                if (!settings.tamagotchi) {
+                    settings.tamagotchi = {
+                        status: "egg",
+                        name: "Pixelino",
+                        hatchDate: null,
+                        lastUpdate: Date.now(),
+                        stats: { hunger: 100, thirst: 100, love: 100, fun: 100, hygiene: 100 },
+                        stage: "egg",
+                        poopCount: 0,
+                        trashCount: 0,
+                        needsBrushing: false,
+                        isSleeping: false,
+                        visible: true,
+                        lastAction: null,
+                        lastActionTime: null
+                    };
+                }
 
                 // IMPORTANT: If decay happened (stats changed or poop generated), SAVE to DB!
                 // This prevents "flickering" or items disappearing between polls.
-
+                if (applyTamagotchiDecay(settings, Date.now())) {
+                    await putKV("settings", JSON.stringify(settings));
+                }
 
                 // Optimization for request count
                 const studentsRaw = await getKV("students");
@@ -958,9 +1045,243 @@ export default {
                 return new Response("Schüler nicht gefunden", { status: 404, headers: corsHeaders });
             }
 
+            // POST /api/tamagotchi/care — Deduct 1 stamp and care for the pet
+            if (path === "/api/tamagotchi/care" && method === "POST") {
+                const body = await request.json();
+                const studentId = body.studentId;
+                const action = body.action;
+                const subAction = (body.subAction || "").toLowerCase(); // Normalize!
 
+                const studentsRaw = await getKV("students");
+                let students = JSON.parse(studentsRaw || "[]");
+                const idx = students.findIndex(s => String(s.id) === String(studentId));
+                if (idx === -1) return new Response("Student not found", { status: 404, headers: corsHeaders });
 
+                const student = students[idx];
+                const today = new Date().toISOString().split('T')[0];
 
+                // ... (rest of the action count logic) ...
+                if (!student.tamaActions) student.tamaActions = { count: 0, date: "" };
+                if (student.tamaActions.date !== today) {
+                    student.tamaActions.count = 0;
+                    student.tamaActions.date = today;
+                }
+
+                if (student.tamaActions.count >= 5) {
+                    return new Response("Du hast dich heute schon 5x um das Tier gekümmert!", { status: 403, headers: corsHeaders });
+                }
+
+                const settingsRaw = await getKV("settings");
+                let settings = JSON.parse(settingsRaw || "{}");
+                if (!settings.tamagotchi || (settings.tamagotchi.status !== "hatched" && settings.tamagotchi.status !== "dead")) {
+                    return new Response("Tamagotchi schläft noch oder existiert nicht.", { status: 400, headers: corsHeaders });
+                }
+
+                if (settings.tamagotchi.status === "dead") {
+                    return new Response("Dein Tamagotchi ist verstorben... 👻 Melde dich beim Admin.", { status: 403, headers: corsHeaders });
+                }
+
+                // Increment action count (Free interaction)
+                student.tamaActions.count++;
+                
+                if (!student.history) student.history = [];
+                
+                // Apply decay before interaction to ensure boosts are applied to current state
+                applyTamagotchiDecay(settings, Date.now());
+
+                // Interaction wakes up the Tamagotchi AND gives a fun boost to keep it awake
+                settings.tamagotchi.isSleeping = false;
+                settings.tamagotchi.lastActionTime = Date.now();
+                settings.tamagotchi.lastAction = action;
+                settings.tamagotchi.stats.fun = Math.max(settings.tamagotchi.stats.fun || 0, 20); // Force out of low-fun zone
+
+                // Record Student Name for Greeting
+                settings.tamagotchi.lastActionStudentName = student.name;
+
+                let logMsg = "";
+                if (action === "feed") { 
+                    const currentFood = subAction || 'apple'; 
+                    settings.tamagotchi.lastSubAction = currentFood; // Store for the Infoboard to display correctly
+                    
+                    // Check for Hand Wash (must be within last 60 seconds)
+                    const now = Date.now();
+                    const lastWash = student.lastHandWash || 0;
+                    if (now - lastWash > 60000) {
+                        return new Response(`${student.name}, vor dem Essen erst Hände Waschen! 🧼`, { status: 403, headers: corsHeaders });
+                    }
+
+                    if (subAction === 'donut') {
+                        settings.tamagotchi.stats.hunger = Math.min(100, (settings.tamagotchi.stats.hunger || 0) + 15);
+                        settings.tamagotchi.stats.fun = Math.min(100, (settings.tamagotchi.stats.fun || 0) + 40);
+                        settings.tamagotchi.sugarCrashTime = Date.now() + 5 * 60000; // Crash after 5 mins
+                        logMsg = "Donut gegessen! 🍩 (Zuckerschub!)";
+                    } else {
+                        // Healthy Apple
+                        settings.tamagotchi.stats.hunger = Math.min(100, (settings.tamagotchi.stats.hunger || 0) + 30);
+                        settings.tamagotchi.stats.fun = Math.min(100, (settings.tamagotchi.stats.fun || 0) + 10);
+                        logMsg = "Gesunden Apfel gegessen! 🍎";
+                    }
+
+                    settings.tamagotchi.needsBrushing = true;
+                    settings.tamagotchi.lastAction = 'feed';
+                    settings.tamagotchi.lastActionTime = Date.now();
+                }
+                else if (action === "brush") {
+                    settings.tamagotchi.needsBrushing = false;
+                    settings.tamagotchi.stats.hygiene = Math.min(100, (settings.tamagotchi.stats.hygiene || 0) + 30);
+                    settings.tamagotchi.lastAction = 'brush';
+                    settings.tamagotchi.lastActionTime = Date.now();
+                    logMsg = "Zähne blitzblank geputzt! 🪥";
+                }
+                else if (action === "recycle") {
+                    settings.tamagotchi.trashCount = 0;
+                    settings.tamagotchi.stats.xp = (settings.tamagotchi.stats.xp || 0) + 20;
+                    settings.tamagotchi.lastAction = 'recycle';
+                    settings.tamagotchi.lastActionTime = Date.now();
+                    logMsg = "Müll gesammelt und getrennt! 🌍";
+                }
+                else if (action === "water") { 
+                    settings.tamagotchi.stats.thirst = Math.min(100, (settings.tamagotchi.stats.thirst || 0) + 25); 
+                    settings.tamagotchi.lastAction = 'water';
+                    settings.tamagotchi.lastActionTime = Date.now();
+                    logMsg = "Tamagotchi getränkt 💧"; 
+                }
+                else if (action === "play") { 
+                    settings.tamagotchi.stats.fun = Math.min(100, (settings.tamagotchi.stats.fun || 0) + 25); 
+                    settings.tamagotchi.stats.love = Math.min(100, (settings.tamagotchi.stats.love || 0) + 5); 
+                    settings.tamagotchi.lastAction = 'play';
+                    settings.tamagotchi.lastActionTime = Date.now();
+                    logMsg = "Mit Tamagotchi gespielt 🧶"; 
+                }
+                else if (action === "love") { 
+                    settings.tamagotchi.stats.love = Math.min(100, (settings.tamagotchi.stats.love || 0) + 25); 
+                    settings.tamagotchi.lastAction = 'love';
+                    settings.tamagotchi.lastActionTime = Date.now();
+                    logMsg = "Tamagotchi gestreichelt ❤️"; 
+                }
+                else if (action === "clean") {
+                    settings.tamagotchi.stats.hygiene = Math.min(100, (settings.tamagotchi.stats.hygiene || 0) + 40);
+                    settings.tamagotchi.poopCount = 0;
+                    settings.tamagotchi.lastAction = 'clean';
+                    settings.tamagotchi.lastActionTime = Date.now();
+                    logMsg = "Tamagotchi Display geputzt 🧼";
+                }
+                else if (action === "train") {
+                    settings.tamagotchi.stats.intelligence = Math.min(100, (settings.tamagotchi.stats.intelligence || 0) + 5);
+                    settings.tamagotchi.stats.xp = (settings.tamagotchi.stats.xp || 0) + 10;
+                    
+                    // Level Up Logic
+                    const nextLevelXp = (settings.tamagotchi.stats.level || 1) * 100;
+                    if (settings.tamagotchi.stats.xp >= nextLevelXp) {
+                        settings.tamagotchi.stats.level = (settings.tamagotchi.stats.level || 1) + 1;
+                        settings.tamagotchi.stats.xp = 0;
+                    }
+
+                    settings.tamagotchi.lastAction = 'train';
+                    settings.tamagotchi.lastActionTime = Date.now();
+                    logMsg = "Mit Tamagotchi gelernt 📚";
+                }
+                else if (action === "poop") {
+                    settings.tamagotchi.poopCount = Math.min(20, (settings.tamagotchi.poopCount || 0) + 1);
+                    settings.tamagotchi.lastAction = 'poop';
+                    settings.tamagotchi.lastActionTime = Date.now();
+                    logMsg = "Häufchen gemacht 💩";
+                }
+                else if (action === "style") {
+                    const hats = [
+                        'hat_party', 'hat_crown', 'hat_cool', 'hat_detective', 
+                        'hat_top', 'hat_wizard', 'hat_ninja', 'hat_bow',
+                        'hat_viking', 'hat_santahat', 'hat_cowboy', 'hat_chef',
+                        'hat_headphones', 'hat_straw', 'hat_graduation', 'hat_eyepatch'
+                    ];
+                    settings.tamagotchi.currentHat = hats[Math.floor(Math.random() * hats.length)];
+                    settings.tamagotchi.hatExpires = Date.now() + 24 * 60 * 60 * 1000; // 24 Hours
+                    settings.tamagotchi.lastAction = 'style';
+                    settings.tamagotchi.lastActionTime = Date.now();
+                    logMsg = "Tamagotchi neu gestylt 🎩";
+                }
+                else if (action === "read") {
+                    settings.tamagotchi.stats.readCount = (settings.tamagotchi.stats.readCount || 0) + 1;
+                    settings.tamagotchi.stats.intelligence = Math.min(100, (settings.tamagotchi.stats.intelligence || 0) + 2);
+                    settings.tamagotchi.lastAction = 'read';
+                    settings.tamagotchi.lastActionTime = Date.now();
+                    logMsg = "Gemeinsam ein Buch gelesen 📖";
+                }
+                else if (action === "homework") {
+                    const readCount = settings.tamagotchi.stats.readCount || 0;
+                    // Probability of success: starts at 20%, goes up to 90% after 15 reads
+                    const successProb = Math.min(0.9, 0.2 + (readCount * 0.05));
+                    const isSuccessful = Math.random() < successProb;
+                    
+                    // Generate Simple Math Problem (Addition up to 20)
+                    const a = Math.floor(Math.random() * 10) + 1;
+                    const b = Math.floor(Math.random() * 10) + 1;
+                    const realResult = a + b;
+                    const displayResult = isSuccessful ? realResult : (realResult + (Math.random() < 0.5 ? 1 : -1) * (Math.floor(Math.random() * 3) + 1));
+                    
+                    settings.tamagotchi.lastHomework = {
+                        a, b, op: '+',
+                        result: displayResult,
+                        isCorrect: isSuccessful
+                    };
+                    
+                    if (isSuccessful) {
+                        settings.tamagotchi.stats.intelligence = Math.min(100, (settings.tamagotchi.stats.intelligence || 0) + 5);
+                        settings.tamagotchi.stats.xp = (settings.tamagotchi.stats.xp || 0) + 15;
+                        logMsg = "Hausaufgaben gelöst! 📝✨";
+                    } else {
+                        // Fail decreases fun because it's frustrating
+                        settings.tamagotchi.stats.fun = Math.max(0, (settings.tamagotchi.stats.fun || 0) - 15);
+                        logMsg = "Hausaufgaben waren zu schwer... 😵‍💫";
+                    }
+                    
+                    settings.tamagotchi.lastAction = 'homework';
+                    settings.tamagotchi.lastActionTime = Date.now();
+                }
+                else if (action === "handwash") {
+                    student.lastHandWash = Date.now();
+                    settings.tamagotchi.lastAction = 'handwash';
+                    settings.tamagotchi.lastActionTime = Date.now();
+                    logMsg = "Hände gewaschen 🧼";
+                }
+                
+                student.history.push({ date: today, reason: logMsg, emoji: "🐣" });
+                settings.tamagotchi.lastUpdate = Date.now();
+
+                await Promise.all([
+                    putKV("students", JSON.stringify(students)),
+                    putKV("settings", JSON.stringify(settings))
+                ]);
+
+                return new Response(JSON.stringify({ student, tamagotchi: settings.tamagotchi }), {
+                    headers: { ...corsHeaders, "Content-Type": "application/json" }
+                });
+            }
+
+            // POST /api/tamagotchi/hatch — Start the pet lifecycle
+            if (path === "/api/tamagotchi/hatch" && method === "POST") {
+                const { name } = await request.json();
+                const settingsRaw = await getKV("settings");
+                let settings = JSON.parse(settingsRaw || "{}");
+                
+                settings.tamagotchi = {
+                    name,
+                    status: "hatched",
+                    stage: "baby", // Fix for "(undefined)" in admin
+                    born: Date.now(),
+                    lastUpdate: Date.now(),
+                    stats: { hunger: 80, thirst: 80, love: 50, fun: 50, hygiene: 100, intelligence: 1, xp: 0, level: 1 },
+                    lastAction: 'hatch',
+                    lastActionTime: new Date().toISOString(),
+                    poopCount: 0,
+                    currentHat: null
+                };
+
+                await putKV("settings", JSON.stringify(settings));
+                return new Response(JSON.stringify(settings.tamagotchi), {
+                    headers: { ...corsHeaders, "Content-Type": "application/json" }
+                });
+            }
 
             if (path.startsWith("/api/students/") && method === "DELETE") {
                 const id = path.split("/").pop();
@@ -1090,7 +1411,22 @@ Schreibstil: Fachlich fundiert, klar und analytisch. Vermeide übermäßig emoti
                 const apiKey = (env.KI_API || "").trim().replace(/^"|"$/g, '');
                 if (!apiKey || apiKey.length < 10) return new Response("Ungültiger API Key (KI_API fehlt)", { status: 500, headers: corsHeaders });
 
-                const result = await callGemini(prompt, apiKey, { temperature: 0.7, maxTokens: 2000 });
+                let result = await callGemini(prompt, apiKey, { temperature: 0.7, maxTokens: 2000 });
+                
+                // --- SMART RETRY: Check for incomplete sentences ---
+                if (result.success && result.text) {
+                    const trimmed = result.text.trim();
+                    const lastChar = trimmed.slice(-1);
+                    const sentenceEndings = ['.', '!', '?', '"', '”', '…'];
+                    
+                    if (!sentenceEndings.includes(lastChar)) {
+                        console.log("NACHMI: Truncated day summary detected, retrying with lower temperature...");
+                        const retryResult = await callGemini(prompt + "\n\nWICHTIG: Deine letzte Nachricht war abgeschnitten. Beende deinen Text UNBEDINGT mit einem vollständigen Satz und Punkt!", apiKey, { temperature: 0.4, maxTokens: 2000 });
+                        if (retryResult.success && retryResult.text) {
+                            result = retryResult;
+                        }
+                    }
+                }
                 
                 if (result.success) {
                     // Cache the result

@@ -211,6 +211,87 @@
                     </p>
                 </div>
 
+                <div class="glass-card" style="border-color: #60a5fa;">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <h3 style="color: #60a5fa; margin-bottom: 0;">🐣 Klassentier</h3>
+                        <button id="tama-visibility-btn" onclick="toggleTamaVisibility()" class="icon-btn-small"
+                            style="font-size: 0.65rem; padding: 4px 10px; border-color: #60a5fa44; color: #60a5fa; font-weight: 800;">TAMA
+                            AN</button>
+                    </div>
+                    <div id="tama-admin-info" style="margin: 12px 0; display: flex; flex-direction: column; gap: 8px;">
+                        <div style="font-size: 0.8rem; color: var(--text-muted);">Status: <span id="tama-admin-status"
+                                style="color: white; font-weight: 700;">Ei 🥚</span></div>
+                        <div
+                            style="display: flex; align-items: center; gap: 10px; padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px;">
+                            <input type="checkbox" id="setting-tama-ignore-freeze"
+                                style="width: 16px; height: 16px; cursor: pointer;">
+                            <label for="setting-tama-ignore-freeze"
+                                style="font-size: 0.75rem; color: #60a5fa; font-weight: 700; cursor: pointer;">Wochenend-Regeln
+                                (Test-Modus)</label>
+                        </div>
+                    </div>
+
+                    <div id="tama-hatch-controls" style="display:flex; flex-direction:column; gap:8px;">
+                        <input type="text" id="tama-new-name" placeholder="Name für das Tierchen" style="width:100%;">
+                        <button onclick="hatchTamagotchi()" class="add-stamp-btn"
+                            style="background: #60a5fa; padding: 10px;">Schlüpfen lassen! ✨</button>
+                    </div>
+
+                    <div id="tama-active-controls" class="hidden"
+                        style="display:flex; flex-direction:column; gap:10px;">
+                        <div
+                            style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 10px; font-size: 0.8rem;">
+                            <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                                <span>Hunger:</span> <span id="tama-admin-hunger">?%</span>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                                <span>Durst:</span> <span id="tama-admin-thirst">?%</span>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                                <span>Sauberkeit:</span> <span id="tama-admin-hygiene">?%</span>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                                <span>Liebe:</span> <span id="tama-admin-love">?%</span>
+                            </div>
+                            <div style="display:flex; justify-content:space-between;"><span>Spaß:</span> <span
+                                    id="tama-admin-fun">?%</span></div>
+                        </div>
+
+                        <!-- TEST CONSOLE -->
+                        <div id="tama-test-panel"
+                            style="margin-top: 5px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.1);">
+                            <p
+                                style="font-size: 0.65rem; color: #60a5fa; font-weight: 800; margin-bottom: 8px; letter-spacing: 1px;">
+                                🧪 TEST-KONSOLE</p>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+                                <button onclick="testTamaStats(20, 20, 20, 20)" class="icon-btn-small"
+                                    style="font-size: 0.6rem; padding: 5px;">Hunger/Langeweile 😩</button>
+                                <button onclick="testTamaStats(100, 100, 100, 100)" class="icon-btn-small"
+                                    style="font-size: 0.6rem; padding: 5px;">Full Stats 🧼</button>
+                                <button onclick="simulateTamaAction('play')" class="icon-btn-small"
+                                    style="font-size: 0.6rem; padding: 5px;">Spielen ⚽</button>
+                                <button onclick="simulateTamaAction('feed')" class="icon-btn-small"
+                                    style="font-size: 0.6rem; padding: 5px;">Füttern 🍎</button>
+                                <button onclick="simulateTamaAction('water')" class="icon-btn-small"
+                                    style="font-size: 0.6rem; padding: 5px;">Tränken 💧</button>
+                                <button onclick="simulateTamaAction('love')" class="icon-btn-small"
+                                    style="font-size: 0.6rem; padding: 5px;">Liebe ❤️</button>
+                                <button onclick="simulateTamaAction('poop')" class="icon-btn-small"
+                                    style="font-size: 0.6rem; padding: 5px; color: #f59e0b; border-color: #f59e0b33;">Häufchen
+                                    (+1) 💩</button>
+                                <button onclick="toggleTamaSleep(true)" class="icon-btn-small"
+                                    style="font-size: 0.6rem; padding: 5px;">Schlafen 💤</button>
+                                <button onclick="toggleTamaSleep(false)" class="icon-btn-small"
+                                    style="font-size: 0.6rem; padding: 5px;">Aufwachen ☀️</button>
+                            </div>
+                        </div>
+
+                        <button onclick="resetTamagotchi()"
+                            style="width:100%; padding: 8px; background: transparent; border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; border-radius: 10px; cursor: pointer; font-size: 0.75rem; margin-top: 5px;">Tierchen
+                            zurücksetzen (Ei)</button>
+                    </div>
+                </div>
 
                 <!-- System Settings -->
                 <div class="glass-card" style="border-color: var(--primary-light);">

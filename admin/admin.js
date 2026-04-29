@@ -1,5 +1,5 @@
-const API_URL = "https://neualm-infotafel.sb-nmsstadt.workers.dev/api";
-const PIN_ADMIN = "5400";
+const API_URL = "https://stempelkarte.sb-nmsstadt.workers.dev/api";
+const PIN_ADMIN = "8520";
 window.students = [];
 let REWARDS = [];
 let lastStudentsSnapshot = "";
@@ -158,7 +158,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-
+    // ── TAMAGOTCHI TOGGLE LISTENER ──
+    document.getElementById('setting-tama-ignore-freeze')?.addEventListener('change', saveSettings);
 });
 
 async function fetchRewards() {
@@ -210,20 +211,179 @@ async function clearStudentOfWeek() {
 }
 
 // ── TAMAGOTCHI ADMIN ─────────────────────────────
+function updateTamagotchiAdmin(tama) {
+    if (!tama) return;
+    const statusEl = document.getElementById('tama-admin-status');
+    const hatchControls = document.getElementById('tama-hatch-controls');
+    const activeControls = document.getElementById('tama-active-controls');
 
+    if (tama.status === "egg") {
+        if (statusEl) statusEl.innerHTML = "Ei 🥚";
+        if (hatchControls) hatchControls.classList.remove('hidden');
+        if (activeControls) activeControls.classList.add('hidden');
+    } else {
+        const stageLabel = tama.stage || "Baby";
+        if (statusEl) statusEl.innerHTML = `${tama.name} 🐣 (${stageLabel})`;
+        if (hatchControls) hatchControls.classList.add('hidden');
+        if (activeControls) activeControls.classList.remove('hidden');
+        
+        const hunger = document.getElementById('tama-admin-hunger');
+        const thirst = document.getElementById('tama-admin-thirst');
+        const hygiene = document.getElementById('tama-admin-hygiene');
+        const love = document.getElementById('tama-admin-love');
+        const fun = document.getElementById('tama-admin-fun');
 
+        if (hunger) hunger.innerText = `${Math.round(tama.stats.hunger || 0)}%`;
+        if (thirst) thirst.innerText = `${Math.round(tama.stats.thirst || 0)}%`;
+        if (hygiene) hygiene.innerText = `${Math.round(tama.stats.hygiene || 0)}%`;
+        if (love) love.innerText = `${Math.round(tama.stats.love || 0)}%`;
+        if (fun) fun.innerText = `${Math.round(tama.stats.fun || 0)}%`;
+    }
+}
 
+async function hatchTamagotchi() {
+    const nameInput = document.getElementById('tama-new-name');
+    const name = nameInput ? nameInput.value : "Pixelino";
+    try {
+        const res = await fetch(`${API_URL}/tamagotchi/hatch`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name })
+        });
+        if (res.ok) {
+            alert(`${name} ist geschlüpft! 🎉`);
+            loadSettings();
+        }
+    } catch (err) { alert("Fehler beim Schlüpfen."); }
+}
 
+async function resetTamagotchi() {
+    if (!confirm("Tierchen wirklich zurücksetzen? Alle Fortschritte gehen verloren.")) return;
+    
+    // We update settings manually to reset
+    const newSettings = { ...currentSettings };
+    newSettings.tamagotchi = {
+        status: "egg",
+        name: "Pixelino",
+        hatchDate: null,
+        lastUpdate: Date.now(),
+        stats: { hunger: 100, thirst: 100, love: 100, energy: 100 },
+        stage: "egg",
+        isSleeping: false
+    };
+    
+    try {
+        const res = await fetch(`${API_URL}/settings`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newSettings)
+        });
+        if (res.ok) {
+            alert("Tierchen zurückgesetzt.");
+            loadSettings();
+        }
+    } catch (err) { alert("Fehler beim Zurücksetzen."); }
+}
 
-
-
+async function toggleTamaVisibility() {
+    if (!currentSettings) return;
+    const newSettings = { ...currentSettings };
+    if (!newSettings.tamagotchi) return;
+    
+    const isVisible = newSettings.tamagotchi.visible !== false;
+    newSettings.tamagotchi.visible = !isVisible;
+    
+    try {
+        const res = await fetch(`${API_URL}/settings`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newSettings)
+        });
+        if (res.ok) {
+            currentSettings = newSettings;
+            const visBtn = document.getElementById('tama-visibility-btn');
+            if (visBtn) {
+                visBtn.innerText = !isVisible ? "TAMA EIN" : "TAMA AUS"; // showing current state of target
+                visBtn.style.color = !isVisible ? "#60a5fa" : "#ef4444";
+                visBtn.style.borderColor = !isVisible ? "#60a5fa44" : "#ef444444";
+            }
+            // No alert needed for minimalist feel, just visual feedback
+        }
+    } catch (err) { alert("Fehler beim Umschalten."); }
+}
 
 // ── TAMAGOTCHI TEST CONSOLE ──────────────────────
+async function testTamaStats(h, t, l, f) {
+    if (!currentSettings) return;
+    const newSettings = JSON.parse(JSON.stringify(currentSettings));
+    if (!newSettings.tamagotchi) return;
+    newSettings.tamagotchi.stats = { 
+        hunger: h, 
+        thirst: t, 
+        love: l,
+        fun: f || 100
+    };
+    
+    try {
+        await fetch(`${API_URL}/settings`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newSettings)
+        });
+        loadSettings();
+    } catch (err) { }
+}
 
+async function simulateTamaAction(action) {
+    if (!currentSettings) return;
+    // Deep clone to avoid mutation side effects
+    const newSettings = JSON.parse(JSON.stringify(currentSettings));
+    if (!newSettings.tamagotchi) return;
+    
+    newSettings.tamagotchi.lastAction = action;
+    newSettings.tamagotchi.lastActionTime = new Date().toISOString();
+    
+    // Immediate stat boost for the simulation (matching new gameplay balance)
+    if (action === 'play') {
+        newSettings.tamagotchi.stats.fun = Math.min(100, (newSettings.tamagotchi.stats.fun || 0) + 25);
+    } else if (action === 'feed') {
+        newSettings.tamagotchi.stats.hunger = Math.min(100, (newSettings.tamagotchi.stats.hunger || 0) + 25);
+    } else if (action === 'water') {
+        newSettings.tamagotchi.stats.thirst = Math.min(100, (newSettings.tamagotchi.stats.thirst || 0) + 25);
+    } else if (action === 'love') {
+        newSettings.tamagotchi.stats.love = Math.min(100, (newSettings.tamagotchi.stats.love || 0) + 25);
+    } else if (action === 'poop') {
+        newSettings.tamagotchi.poopCount = Math.min(100, (newSettings.tamagotchi.poopCount || 0) + 1);
+    }
+    
+    try {
+        const res = await fetch(`${API_URL}/settings`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newSettings)
+        });
+        if (res.ok) {
+            console.log(`Action ${action} simulated.`);
+            loadSettings();
+        }
+    } catch (err) { }
+}
 
-
-
-
+async function toggleTamaSleep(active) {
+    if (!currentSettings) return;
+    const newSettings = { ...currentSettings };
+    if (!newSettings.tamagotchi) return;
+    newSettings.tamagotchi.isSleeping = active;
+    
+    try {
+        await fetch(`${API_URL}/settings`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newSettings)
+        });
+        loadSettings();
+    } catch (err) { }
+}
 
 function testSound(id) {
     const file = `../audio/${id}.mp3`;
@@ -288,7 +448,8 @@ async function fetchStudentsSilent() {
                 updateField('setting-vip-duration', freshSettings.vipDurationDays || 3);
                 window._vipDuration = freshSettings.vipDurationDays || 3;
                 
-
+                renderSotwCurrent();
+                updateTamagotchiAdmin(freshSettings.tamagotchi);
             }
         }
     } catch (err) { }
@@ -976,9 +1137,17 @@ async function loadSettings() {
             updateField('setting-upcoming-projects', settings.upcomingProjects || "");
             updateField('setting-today-plan', settings.todayPlan || "");
 
+            renderSotwCurrent();
+            updateTamagotchiAdmin(settings.tamagotchi);
 
-
-
+            // Sync Visibility Button
+            const visBtn = document.getElementById('tama-visibility-btn');
+            if (visBtn) {
+                const isVisible = settings.tamagotchi?.visible !== false;
+                visBtn.innerText = isVisible ? "TAMA EIN" : "TAMA AUS";
+                visBtn.style.color = isVisible ? "#60a5fa" : "#ef4444";
+                visBtn.style.borderColor = isVisible ? "#60a5fa44" : "#ef444444";
+            }
         }
     } catch (err) { }
 }
@@ -1050,7 +1219,10 @@ async function saveSettings() {
                 title: groupTitle,
                 target: groupTarget
             },
-
+            tamagotchi: {
+                ...(currentSettings?.tamagotchi || {}),
+                ignoreWeekendFreeze: document.getElementById('setting-tama-ignore-freeze').checked
+            }
         };
 
         const response = await fetch(`${API_URL}/settings`, {

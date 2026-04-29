@@ -1,4 +1,4 @@
-const API_URL = "https://neualm-infotafel.sb-nmsstadt.workers.dev/api";
+const API_URL = "https://stempelkarte.sb-nmsstadt.workers.dev/api";
 
 let students = [];
 let settings = {};
