@@ -1,0 +1,16 @@
+name = "neualm-infotafel"
+main = "worker.js"
+compatibility_date = "2024-04-01"
+
+[vars]
+# Add global variables here if needed
+
+[[d1_databases]]
+binding = "DB"
+database_name = "neualm-db"
+database_id = "03067f5b-752c-4b86-8082-2c33368e13c3"
+
+# Optional: KV Namespace for migration/fallback
+# [[kv_namespaces]]
+# binding = "DATABASE"
+# id = "03067f5b-752c-4b86-8082-2c33368e13c3"

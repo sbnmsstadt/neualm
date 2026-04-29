@@ -62,35 +62,115 @@ header {
     }
 }
 
-/* Stats Row */
-.stats-row {
+/* Top Navigation Row - NEW */
+.top-nav-row {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1.5rem;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1rem;
     margin-bottom: 2rem;
 }
 
-.stat-card {
+.nav-card {
     background: var(--bg-card);
     border: 1px solid var(--glass-border);
-    padding: 1.5rem;
-    border-radius: 24px;
+    border-radius: 20px;
+    padding: 1rem 0.8rem;
     display: flex;
-    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
 }
 
-.stat-value {
-    font-size: 2rem;
+.nav-card:hover {
+    transform: translateY(-5px);
+    border-color: rgba(255, 255, 255, 0.3);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+.nav-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 100%);
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.nav-card:hover::before { opacity: 1; }
+
+.nav-card.lab { border-left: 4px solid #f59e0b; }
+.nav-card.planer { border-left: 4px solid #38bdf8; }
+.nav-card.logbook { border-left: 4px solid #22c55e; }
+.nav-card.birthdays { border-left: 4px solid var(--primary-light); cursor: default; }
+
+.nav-card.birthdays #birthday-dashboard {
+    max-height: 40px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.1) transparent;
+}
+
+.nav-icon {
+    font-size: 1.6rem;
+}
+
+.nav-info h3 {
+    margin: 0 !important;
+    font-size: 0.95rem;
     font-weight: 800;
+}
+
+.nav-info p {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin: 2px 0 0 0;
+}
+
+/* Compact Stats Card - NEW */
+.compact-stats-card {
+    display: flex;
+    justify-content: space-between;
+    padding: 1rem !important;
+    margin-bottom: 1.5rem;
+    background: rgba(255,255,255,0.03) !important;
+}
+
+.compact-stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    border-right: 1px solid rgba(255,255,255,0.05);
+}
+
+.compact-stat-item:last-child { border-right: none; }
+
+.compact-stat-item.highlight .c-stat-value {
+    color: var(--accent);
+}
+
+.c-stat-label {
+    font-size: 0.65rem;
+    font-weight: 800;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.c-stat-value {
+    font-size: 1.1rem;
+    font-weight: 900;
     color: var(--primary-light);
 }
 
-.stat-label {
-    font-size: 0.8rem;
-    color: var(--text-muted);
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 1px;
+@media (max-width: 1024px) {
+    .top-nav-row {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
 }
 
 /* Glass Card */
@@ -183,24 +263,6 @@ header {
     cursor: pointer;
 }
 
-.btn-time-select {
-    flex: 1;
-    background: rgba(255,255,255,0.08);
-    border: 1px solid var(--glass-border);
-    color: white;
-    padding: 6px;
-    border-radius: 8px;
-    font-size: 0.8rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.btn-time-select:hover {
-    background: var(--primary);
-    border-color: var(--primary-light);
-}
-
 .icon-btn-small {
     background: rgba(255,255,255,0.05);
     border: 1px solid var(--glass-border);
@@ -235,6 +297,7 @@ input[type=number]::-webkit-outer-spin-button {
 }
 input[type=number] {
   -moz-appearance: textfield;
+  appearance: textfield;
 }
 
 .subtitle {
@@ -448,4 +511,58 @@ input[type=number] {
 
 .login-card button:hover {
     background: var(--primary-light);
+}
+.add-badge-toggle:hover {
+    background: rgba(255,255,255,0.08) !important;
+    border-color: rgba(255,255,255,0.4) !important;
+    color: white !important;
+}
+
+.add-badge-toggle.active {
+    background: var(--primary) !important;
+    border-color: var(--primary-light) !important;
+    color: white !important;
+    transform: rotate(45deg);
+}
+
+/* New Compact Attendance Chips */
+.attendance-chips-container {
+    display: flex;
+    gap: 4px;
+    margin-left: auto; /* Push to the right in flex-info */
+}
+
+.attendance-chip {
+    width: 24px;
+    height: 24px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65rem;
+    font-weight: 800;
+    color: rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+}
+
+.attendance-chip:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.attendance-chip.active {
+    background: var(--success);
+    color: white;
+    border-color: hsla(142, 70%, 60%, 0.4);
+    box-shadow: 0 0 10px hsla(142, 70%, 45%, 0.3);
+    transform: scale(1.05);
+}
+
+.attendance-chip.active:hover {
+    filter: brightness(1.1);
 }

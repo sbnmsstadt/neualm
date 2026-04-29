@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Content-Kalender - Stempelkarte</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="admin/admin.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 20px;
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(139, 92, 246, 0.08), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(56, 189, 248, 0.08), transparent 25%);
+        }
+
+        /* Re-use components from kreativ.html & admin.html */
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            color: white;
+        }
+
+        .ai-result-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            position: relative;
+        }
+
+        .ai-result-title {
+            color: white;
+            font-size: 1.25rem;
+            margin: 0;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 10px;
+        }
+        
+        .ai-result-date {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-weight: normal;
+        }
+
+        .ai-result-desc {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            line-height: 1.5;
+            margin: 0;
+        }
+
+        .ai-material-list {
+            background: rgba(139, 92, 246, 0.1);
+            border-left: 3px solid var(--accent);
+            padding: 10px 15px;
+            border-radius: 0 8px 8px 0;
+            font-size: 0.9rem;
+            color: #e2e8f0;
+        }
+
+        .ai-action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: auto;
+        }
+
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 40px 0 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .section-header h2 {
+            font-size: 1.5rem;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .status-badge {
+            font-size: 0.7rem;
+            padding: 4px 10px;
+            border-radius: 20px;
+            text-transform: uppercase;
+            font-weight: 800;
+        }
+
+        /* Status Colors */
+        .card-current { border-top: 4px solid #10b981 !important; background: rgba(16, 185, 129, 0.05) !important; }
+        .card-upcoming { border-top: 4px solid #f59e0b !important; background: rgba(245, 158, 11, 0.05) !important; }
+        .card-library { border-top: 4px solid var(--accent) !important; }
+        .card-archived { border-top: 4px solid #64748b !important; opacity: 0.7; }
+
+        .delete-btn {
+            background: transparent;
+            border: none;
+            color: #ef4444;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 6px;
+            transition: 0.2s ease;
+        }
+        
+        .delete-btn:hover {
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            background: rgba(255,255,255,0.02);
+            border-radius: 20px;
+            border: 1px dashed rgba(255,255,255,0.1);
+            color: var(--text-muted);
+            grid-column: 1 / -1;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Login Overlay for Admin PIN -->
+    <div id="login-overlay" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); align-items: center; justify-content: center; z-index: 2000;">
+        <div class="glass-card" style="max-width: 400px; padding: 2rem; text-align: center;">
+            <h2>Admin Login</h2>
+            <p style="color: var(--text-muted); margin-bottom: 1.5rem; font-size: 0.9rem;">Bitte Admin PIN eingeben</p>
+            <input type="password" id="admin-pin-input" maxlength="4" placeholder="••••" autofocus onkeydown="if(event.key==='Enter') verifyAdminPin()" 
+                style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.2); color: white; margin-bottom: 1rem; text-align: center; font-size: 1.5rem; letter-spacing: 0.5rem;">
+            <button class="add-stamp-btn" onclick="verifyAdminPin()" style="width: 100%;">Einloggen</button>
+            <button onclick="window.location.href='admin/index.html'" style="margin-top: 10px; width: 100%; background: transparent; border: 1px solid var(--glass-border); padding: 12px; border-radius: 12px; color: white; cursor: pointer;">Zurück zum Admin Dashboard</button>
+        </div>
+    </div>
+
+    <!-- Edit Plan Modal -->
+    <div id="edit-plan-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; z-index: 2000;">
+        <div class="glass-card" style="max-width: 500px; width: 90%; padding: 2rem;">
+            <h2 id="edit-plan-title" style="margin-bottom: 0.5rem; display: flex; align-items: center; gap: 10px;">
+                <span>✏️</span> Eintrag bearbeiten
+            </h2>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">
+                Passe den Text an, bevor er auf der Stempelkarte angezeigt wird. Du bearbeitest hier den gesamten aktiven Inhalt!
+            </p>
+            <textarea id="edit-plan-textarea" spellcheck="false" style="width: 100%; height: 200px; padding: 12px; border-radius: 12px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.2); color: white; margin-bottom: 1.5rem; resize: vertical; font-size: 0.95rem; line-height: 1.5; font-family: inherit; box-sizing: border-box;"></textarea>
+            
+            <div style="display: flex; gap: 10px;">
+                <button id="save-plan-btn" class="add-stamp-btn" onclick="savePlanEdit()" style="flex: 2; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                    Speichern
+                </button>
+                <button class="btn-outline" onclick="closePlanModal()" style="flex: 1;">Abbrechen</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="app-container" style="display: none; max-width: 1400px; width: 100%; margin: 0 auto;">
+        <header style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 20px;">
+            <div class="admin-title-area">
+                <div class="brand-tag">PROJEKT-PIPELINE</div>
+                <h1 style="font-size: 2rem; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 12px;">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                    Content-Kalender
+                </h1>
+                <p class="subtitle" style="margin:0;">Steuere deine Projekte von der Idee bis zum Archiv</p>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn-outline" onclick="window.location.href='kreativ.html'" style="margin: 0; background: rgba(139, 92, 246, 0.1);">
+                    ✨ Neue Ideen finden
+                </button>
+                <button class="back-btn" onclick="window.location.href='admin/index.html'" style="margin: 0;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                    Admin Dashboard
+                </button>
+            </div>
+        </header>
+
+        <main>
+            <!-- Aktuelle Projekte -->
+            <div class="section-header" style="border-color: #10b981;">
+                <span style="font-size: 1.5rem;">🚀</span>
+                <h2 style="color: #10b981;">Aktuelle Projekte</h2>
+                <span class="status-badge" style="background: rgba(16, 185, 129, 0.2); color: #10b981;">Live am Board</span>
+            </div>
+            <div id="projects-current" class="projects-grid"></div>
+
+            <!-- Geplante Projekte -->
+            <div class="section-header" style="border-color: #f59e0b;">
+                <span style="font-size: 1.5rem;">🔜</span>
+                <h2 style="color: #f59e0b;">Geplante Projekte</h2>
+                <span class="status-badge" style="background: rgba(245, 158, 11, 0.2); color: #f59e0b;">Vormerkung</span>
+            </div>
+            <div id="projects-upcoming" class="projects-grid"></div>
+
+            <!-- Ideen-Kiste -->
+            <div class="section-header" style="border-color: var(--accent);">
+                <span style="font-size: 1.5rem;">💡</span>
+                <h2 style="color: var(--accent);">Ideen-Kiste</h2>
+                <span class="status-badge" style="background: rgba(139, 92, 246, 0.2); color: var(--accent);">Gespeichert</span>
+            </div>
+            <div id="projects-library" class="projects-grid"></div>
+
+            <!-- Archiv -->
+            <div class="section-header" style="border-color: #64748b;">
+                <span style="font-size: 1.5rem;">📦</span>
+                <h2 style="color: #64748b;">Archiv</h2>
+                <span class="status-badge" style="background: rgba(100, 116, 139, 0.2); color: #64748b;">Abgeschlossen</span>
+            </div>
+            <div id="projects-archived" class="projects-grid"></div>
+        </main>
+    </div>
+
+    <!-- Toast UI -->
+    <div id="toast" style="display:none; position:fixed; bottom:30px; left:50%; transform:translateX(-50%); background:rgba(255,255,255,0.1); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); color:white; padding:12px 24px; border-radius:50px; border:1px solid rgba(255,255,255,0.2); z-index:9999; box-shadow:0 10px 30px rgba(0,0,0,0.5); font-weight:500;">
+        Aktion erfolgreich!
+    </div>
+
+    <script src="planer.js?v=1"></script>
+</body>
+</html>

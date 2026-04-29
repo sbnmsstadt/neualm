@@ -1,6 +1,6 @@
 const API_URL = "https://neualm-infotafel.sb-nmsstadt.workers.dev/api";
-const PIN_ADMIN = "8520"; 
-let students = [];
+const PIN_ADMIN = "5400";
+window.students = [];
 let REWARDS = [];
 let lastStudentsSnapshot = "";
 let currentSettings = null; // Global settings cache
@@ -10,44 +10,11 @@ const adminApp = document.getElementById('admin-app');
 const loginOverlay = document.getElementById('login-overlay');
 
 // Simple PIN protection for Admin Dashboard
-async function verifyAdminPin() {
-    const input = document.getElementById('admin-pin-input');
-    const password = input.value;
-    
-    try {
-        const response = await fetch(`${API_URL}/admin/login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ password })
-        });
-        
-        if (response.ok) {
-            const data = await response.json();
-            if (data.success) {
-                // Use a different key to distinguish from old PIN
-                sessionStorage.setItem('admin_auth_v2', password);
-                checkAuthV2();
-            } else {
-                alert("Falscher PIN / Passwort!");
-                input.value = "";
-                input.focus();
-            }
-        } else {
-            alert("Login fehlgeschlagen. Passwort prüfen.");
-            input.value = "";
-            input.focus();
-        }
-    } catch (err) {
-        alert("Verbindung zum Server fehlgeschlagen.");
-    }
-}
-
-// Updated auth check for v2
-function checkAuthV2() {
-    const auth = sessionStorage.getItem('admin_auth_v2');
-    if (auth) {
+function checkAuth() {
+    if (sessionStorage.getItem('admin_auth') === PIN_ADMIN) {
         if (loginOverlay) loginOverlay.style.display = 'none';
         if (adminApp) adminApp.style.display = 'block';
+        loadSettings(); // Load settings once authorized
     } else {
         if (loginOverlay) loginOverlay.style.display = 'flex';
         if (adminApp) adminApp.style.display = 'none';
@@ -55,23 +22,143 @@ function checkAuthV2() {
     }
 }
 
-checkAuthV2();
+function verifyAdminPin() {
+    const input = document.getElementById('admin-pin-input');
+    if (input.value === PIN_ADMIN) {
+        sessionStorage.setItem('admin_auth', PIN_ADMIN);
+        checkAuth();
+    } else {
+        alert("Falscher PIN!");
+        input.value = "";
+        input.focus();
+    }
+}
+
+checkAuth();
 
 document.addEventListener('DOMContentLoaded', async () => {
     await fetchRewards();
-    loadSettings();
+    await fetchBadges(); // ← muss VOR fetchStudents fertig sein, sonst fehlen Badges beim Rendern
+    await loadSettings();
+    Logbook.init();
+    Appointments.init();
     fetchStudents();
-    
-    // Poll every 5 seconds for new data
-    setInterval(fetchStudentsSilent, 5000);
-    
+
+    // Poll every 60 seconds for new data (increased from 30s to further save API requests)
+    setInterval(fetchStudentsSilent, 60000);
+
     document.getElementById('add-btn')?.addEventListener('click', createNewStudent);
     document.getElementById('add-reward-btn')?.addEventListener('click', createNewReward);
-    
+
+    // Logbook Navigation
+    document.getElementById('nav-logbook-btn')?.addEventListener('click', () => {
+        const overview = document.getElementById('admin-student-list');
+        const overviewTitle = document.querySelector('.main-content h2');
+        const logbook = document.getElementById('logbook-view');
+        const navBtn = document.getElementById('nav-logbook-btn');
+
+        if (logbook.classList.contains('hidden')) {
+            // Show Logbook
+            overview.classList.add('hidden');
+            if (overviewTitle) overviewTitle.innerText = "Pädagog. Logbuch";
+            logbook.classList.remove('hidden');
+            document.getElementById('search-students').parentElement.style.display = 'none';
+            navBtn.querySelector('h3').innerText = "⬅ Übersicht";
+
+            // Initialize/Render Logbook
+            Logbook.init();
+            Logbook.renderStudents();
+        } else {
+            // Back to Overview
+            overview.classList.remove('hidden');
+            if (overviewTitle) overviewTitle.innerText = "Schüler-Übersicht";
+            logbook.classList.add('hidden');
+            document.getElementById('search-students').parentElement.style.display = 'flex';
+            navBtn.querySelector('h3').innerText = "Pädagog. Logbuch";
+        }
+    });
+
+    // Appointments Navigation
+    document.getElementById('nav-appointments-btn')?.addEventListener('click', () => {
+        const overview = document.getElementById('admin-student-list');
+        const overviewTitle = document.querySelector('.main-content h2');
+        const appointments = document.getElementById('appointments-view');
+        const navBtn = document.getElementById('nav-appointments-btn');
+        const searchBar = document.getElementById('search-students').parentElement;
+
+        if (appointments.classList.contains('hidden')) {
+            // Hide everything else
+            document.getElementById('logbook-view').classList.add('hidden');
+            document.getElementById('nav-logbook-btn').querySelector('h3').innerText = "Pädagog. Logbuch";
+            
+            // Show Appointments
+            overview.classList.add('hidden');
+            if (overviewTitle) overviewTitle.innerText = "Termin-Planer";
+            appointments.classList.remove('hidden');
+            searchBar.style.display = 'none';
+            navBtn.querySelector('h3').innerText = "⬅ Übersicht";
+
+            // Initialize/Render
+            Appointments.init();
+        } else {
+            // Back to Overview
+            overview.classList.remove('hidden');
+            if (overviewTitle) overviewTitle.innerText = "Schüler-Übersicht";
+            appointments.classList.add('hidden');
+            searchBar.style.display = 'flex';
+            navBtn.querySelector('h3').innerText = "Termin-Planer";
+        }
+    });
+
     // Search functionality
     document.getElementById('search-students')?.addEventListener('input', (e) => {
         renderAdminList(e.target.value.toLowerCase());
     });
+
+    // ── BADGE CHIP CLICKS (permanent single listener) ──
+    // Attached here once so it doesn't stack on every renderAdminList call.
+    document.getElementById('admin-student-list')?.addEventListener('click', async (e) => {
+        const btn = e.target.closest('.badge-chip-btn');
+        if (!btn || btn.disabled) return;
+        const studentId = btn.dataset.student;
+        const badgeId = btn.dataset.badge;
+        if (!studentId || !badgeId) return;
+
+        btn.style.opacity = '0.5';
+        btn.disabled = true;
+
+        const student = window.students.find(s => s.id === studentId);
+        if (!student) { btn.style.opacity = '1'; btn.disabled = false; return; }
+
+        const current = student.badges || [];
+        const newBadges = current.includes(badgeId)
+            ? current.filter(id => id !== badgeId)
+            : [...current, badgeId];
+
+        try {
+            const res = await fetch(`${API_URL}/students/${studentId}/badges`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ badges: newBadges })
+            });
+            if (res.ok) {
+                // Update local state directly — no full re-fetch needed
+                student.badges = newBadges;
+                renderAdminList(document.getElementById('search-students')?.value.toLowerCase() || '');
+            } else {
+                const errText = await res.text();
+                alert(`Fehler beim Zuweisen: ${res.status} \u2014 ${errText}`);
+                btn.style.opacity = '1';
+                btn.disabled = false;
+            }
+        } catch (err) {
+            alert('Verbindungsfehler: ' + err.message);
+            btn.style.opacity = '1';
+            btn.disabled = false;
+        }
+    });
+
+
 });
 
 async function fetchRewards() {
@@ -79,7 +166,7 @@ async function fetchRewards() {
         const response = await fetch(`${API_URL}/rewards`);
         if (response.ok) {
             REWARDS = await response.json();
-            REWARDS.sort((a,b) => a.threshold - b.threshold);
+            REWARDS.sort((a, b) => a.threshold - b.threshold);
             renderRewardDashboard();
             updateStats();
         }
@@ -94,11 +181,14 @@ async function fetchStudents() {
         if (response.ok) {
             const raw = await response.text();
             lastStudentsSnapshot = raw;
-            students = JSON.parse(raw);
+            window.students = JSON.parse(raw);
             renderAdminList();
             renderBirthdayDashboard();
             renderRedemptionDashboard();
             updateStats();
+            populateSotwDropdown();
+            renderSotwCurrent();
+            if (typeof Appointments !== 'undefined') Appointments.renderStudentList();
         } else {
             showStatus("Fehler beim Laden der Schüler.", "error");
         }
@@ -107,30 +197,108 @@ async function fetchStudents() {
     }
 }
 
+async function clearStudentOfWeek() {
+    if (!confirm('SOTW wirklich löschen?')) return;
+    try {
+        const res = await fetch(`${API_URL}/students/student-of-the-week`, {
+            method: 'DELETE'
+        });
+        if (res.ok) {
+            loadSettings();
+        }
+    } catch (err) { }
+}
+
+// ── TAMAGOTCHI ADMIN ─────────────────────────────
+
+
+
+
+
+
+
+
+// ── TAMAGOTCHI TEST CONSOLE ──────────────────────
+
+
+
+
+
+
+function testSound(id) {
+    const file = `../audio/${id}.mp3`;
+    console.log("Broadcasting sound test for", file);
+    const bc = new BroadcastChannel('nachmi_updates');
+    bc.postMessage({ 
+        type: 'play_sound', 
+        file: file, 
+        test: true 
+    });
+}
+
 async function fetchStudentsSilent() {
     if (document.hidden) return;
     try {
-        const response = await fetch(`${API_URL}/students`);
+        // Optimized: Single request for both students and settings
+        const response = await fetch(`${API_URL}/sync/admin`);
         if (response.ok) {
-            const raw = await response.text();
-            if (raw !== lastStudentsSnapshot) {
-                lastStudentsSnapshot = raw;
-                students = JSON.parse(raw);
+            const data = await response.json();
+            const { students: freshStudents, settings: freshSettings, rewards: freshRewards } = data;
+
+            // Update rewards if provided
+            if (freshRewards) {
+                const rawRewards = JSON.stringify(freshRewards);
+                if (rawRewards !== JSON.stringify(REWARDS)) {
+                    REWARDS = freshRewards;
+                    REWARDS.sort((a, b) => a.threshold - b.threshold);
+                    renderRewardDashboard();
+                    renderRedemptionDashboard();
+                    updateStats();
+                }
+            }
+
+            // Check if students data actually changed
+            const rawStudents = JSON.stringify(freshStudents);
+            if (rawStudents !== lastStudentsSnapshot) {
+                lastStudentsSnapshot = rawStudents;
+                window.students = freshStudents;
                 renderAdminList(document.getElementById('search-students')?.value.toLowerCase());
                 renderBirthdayDashboard();
                 renderRedemptionDashboard();
                 updateStats();
+                if (typeof Appointments !== 'undefined') Appointments.renderStudentList();
+            }
+
+            // Sync settings
+            if (freshSettings) {
+                currentSettings = freshSettings;
+                // Sync UI elements from settings
+                const updateField = (id, value, isCheckbox = false) => {
+                    const el = document.getElementById(id);
+                    if (!el || document.activeElement === el) return;
+                    if (lastLoadedValues[id] !== undefined && el[isCheckbox ? 'checked' : 'value'] !== lastLoadedValues[id]) return;
+                    el[isCheckbox ? 'checked' : 'value'] = value;
+                    lastLoadedValues[id] = value;
+                };
+
+                updateField('setting-community-visible', freshSettings.communityGoalVisible !== false, true);
+                updateField('setting-community-title', freshSettings.communityTitle || "Pizza-Party");
+                updateField('setting-community-target', freshSettings.communityTarget || 500);
+                updateField('setting-tama-ignore-freeze', freshSettings.tamagotchi?.ignoreWeekendFreeze || false, true);
+                updateField('setting-vip-duration', freshSettings.vipDurationDays || 3);
+                window._vipDuration = freshSettings.vipDurationDays || 3;
+                
+
             }
         }
     } catch (err) { }
-    loadSettings();
 }
 
 function updateStats() {
-    const totalStudents = students.length;
-    const totalStamps = students.reduce((sum, s) => sum + (s.stamps || 0), 0);
+    const totalStudents = window.students.length;
+    const totalStamps = window.students.reduce((sum, s) => sum + (s.stamps || 0), 0);
     const totalRewards = REWARDS.length;
-    
+
     let pendingRedemptions = 0;
     students.forEach(s => {
         if (s.redemptions) {
@@ -150,9 +318,9 @@ function renderRedemptionDashboard() {
     const db = document.getElementById('redemption-dashboard');
     if (!db) return;
     db.innerHTML = '';
-    
+
     let requests = [];
-    students.forEach(s => {
+    window.students.forEach(s => {
         if (s.redemptions) {
             for (const [threshold, status] of Object.entries(s.redemptions)) {
                 if (status === 'pending') {
@@ -209,43 +377,43 @@ function renderBirthdayDashboard() {
     const db = document.getElementById('birthday-dashboard');
     if (!db) return;
     db.innerHTML = '';
-    
+
     const today = new Date();
-    today.setHours(0,0,0,0);
+    today.setHours(0, 0, 0, 0);
     const twoWeeksLater = new Date(today);
     twoWeeksLater.setDate(today.getDate() + 14);
-    
+
     let upcoming = [];
-    students.forEach(s => {
+    window.students.forEach(s => {
         if (!s.birthday) return;
         const [y, m, d] = s.birthday.split('-').map(Number);
         let bDate = new Date(today.getFullYear(), m - 1, d);
-        if (bDate < today) bDate = new Date(today.getFullYear() + 1, m-1, d);
-        
+        if (bDate < today) bDate = new Date(today.getFullYear() + 1, m - 1, d);
+
         if (bDate >= today && bDate <= twoWeeksLater) {
             upcoming.push({ name: s.name, date: bDate, original: `${d}.${m}.${y}`, age: bDate.getFullYear() - y });
         }
     });
-    
-    upcoming.sort((a,b) => a.date - b.date);
-    
+
+    upcoming.sort((a, b) => a.date - b.date);
+
     if (upcoming.length === 0) {
         db.innerHTML = '<i>Keine in Sicht.</i>';
         return;
     }
-    
+
     upcoming.forEach(u => {
         const diff = Math.ceil((u.date - today) / (1000 * 60 * 60 * 24));
         const relative = diff === 0 ? 'Heute!' : (diff === 1 ? 'Morgen' : `In ${diff} Tagen`);
         const el = document.createElement('div');
-        el.style.fontSize = '0.85rem';
+        el.style.fontSize = '0.7rem';
         el.style.marginBottom = '5px';
         el.innerHTML = `<strong>${u.name}</strong> (${u.age} J.) - <span style="color:var(--primary-light)">${relative}</span>`;
         db.appendChild(el);
     });
 }
 
-let editingReward = null; 
+let editingReward = null;
 
 function renderRewardDashboard() {
     const list = document.getElementById('admin-reward-list');
@@ -255,7 +423,7 @@ function renderRewardDashboard() {
     REWARDS.forEach(reward => {
         const item = document.createElement('div');
         item.className = 'reward-admin-item';
-        
+
         if (editingReward && editingReward.oldThreshold === reward.threshold) {
             item.classList.add('editing');
             item.innerHTML = `
@@ -265,7 +433,7 @@ function renderRewardDashboard() {
                         <input type="text" id="edit-reward-icon" value="${editingReward.icon}" style="width:40px">
                     </div>
                     <div class="edit-field">
-                        <label>Punkte</label>
+                        <label>Stempel</label>
                         <div class="threshold-adjuster">
                             <button onclick="adjustEditThreshold(-1)">-</button>
                             <input type="number" id="edit-reward-threshold" value="${editingReward.threshold}" 
@@ -352,7 +520,7 @@ function adjustEditThreshold(delta) {
 
 async function saveEditReward() {
     if (!editingReward) return;
-    
+
     // Use the values from our local editingReward state which is kept in sync by adjustEditThreshold
     // but icon/title/desc need to be grabbed from DOM
     const newIcon = document.getElementById('edit-reward-icon').value;
@@ -368,7 +536,7 @@ async function saveEditReward() {
     // Check if new threshold already exists elsewhere
     if (newT !== editingReward.oldThreshold) {
         if (REWARDS.some(r => r.threshold === newT)) {
-            alert(`Es gibt bereits eine Belohnung für ${newT} Punkte. Bitte wähle eine andere Anzahl.`);
+            alert(`Es gibt bereits eine Belohnung für ${newT} Stempel. Bitte wähle eine andere Anzahl.`);
             return;
         }
     }
@@ -400,7 +568,7 @@ async function saveRewardsAPI(arr) {
             renderRewardDashboard();
             updateStats();
         }
-    } catch (err) {}
+    } catch (err) { }
 }
 
 async function createNewReward() {
@@ -408,20 +576,20 @@ async function createNewReward() {
     const i = document.getElementById('new-reward-icon').value || "🎁";
     const title = document.getElementById('new-reward-title').value;
     const desc = document.getElementById('new-reward-desc').value;
-    
+
     if (!t || !title) {
-        alert("Bitte Punktanzahl und Titel eingeben.");
+        alert("Bitte Stempelanzahl und Titel eingeben.");
         return;
     }
 
     if (REWARDS.some(r => r.threshold === t)) {
-        alert(`Es gibt bereits eine Belohnung für ${t} Punkte.`);
+        alert(`Es gibt bereits eine Belohnung für ${t} Stempel.`);
         return;
     }
 
-    const updated = [...REWARDS, {threshold:t, icon:i, title, desc, active: true}];
+    const updated = [...REWARDS, { threshold: t, icon: i, title, desc, active: true }];
     await saveRewardsAPI(updated);
-    
+
     // Clear inputs
     document.getElementById('new-reward-threshold').value = '';
     document.getElementById('new-reward-title').value = '';
@@ -439,51 +607,117 @@ function renderAdminList(filter = "") {
     if (!container) return;
     container.innerHTML = '';
 
-    const filtered = filter ? students.filter(s => s.name.toLowerCase().includes(filter)) : students;
+    const filtered = filter ? window.students.filter(s => s.name.toLowerCase().includes(filter)) : window.students;
 
     filtered.forEach(student => {
         const item = document.createElement('div');
         item.className = 'glass-card admin-student-item';
         const isVip = student.vip && student.vip.active;
-        
-        // Calculate VIP/Badge days
+        const fullCards = Math.floor(student.stamps / 20);
+        const vipEligible = fullCards >= 1;
+
+        // Calculate VIP days
         let vipDayText = '';
         if (isVip && student.vip.grantedAt) {
             const grantedDate = new Date(student.vip.grantedAt);
-            grantedDate.setHours(0,0,0,0);
+            grantedDate.setHours(0, 0, 0, 0);
             const today = new Date();
-            today.setHours(0,0,0,0);
-            const daysDiff = Math.floor((today.getTime() - grantedDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-            const vipDuration = window._vipDuration || 7;
+            today.setHours(0, 0, 0, 0);
+            const daysDiff = Math.floor((today - grantedDate) / (1000 * 60 * 60 * 24)) + 1;
+            const vipDuration = window._vipDuration || 3;
             const daysLeft = vipDuration - daysDiff + 1;
-            vipDayText = daysLeft <= 1 
-                ? `🏆 — <span style="color:#ff6b6b">Letzter Tag!</span>` 
-                : `🏆 — <span style="color:gold">Tag ${daysDiff}/${vipDuration}</span>`;
+            vipDayText = daysLeft <= 1
+                ? `⭐ VIP — <span style="color:#ff6b6b">Letzter Tag!</span>`
+                : `⭐ VIP — <span style="color:gold">Tag ${daysDiff}/${vipDuration}</span>`;
         }
 
-        const days = student.attendanceDays || [];
-        const dayBadges = ['Mo', 'Di', 'Mi', 'Do', 'Fr'].map(d => 
-            `<span style="font-size:0.65rem; padding:2px 4px; border-radius:4px; background:${days.includes(d) ? 'var(--primary-light)' : 'rgba(255,255,255,0.05)'}; color:${days.includes(d) ? '#002244' : 'white'}; opacity:${days.includes(d) ? '1' : '0.3'}; margin-right:2px; font-weight:800;">${d}</span>`
-        ).join('');
+        // Badge chips + toggle using data attributes (avoids inline onclick escaping issues)
+        const studentBadgeIds = student.badges || [];
+        const hasBadges = allBadges.length > 0;
+        let badgeSection = '';
+        if (hasBadges) {
+            // Show only EARNED badges prominently
+            const earnedChips = allBadges
+                .filter(b => studentBadgeIds.includes(b.id))
+                .map(b => `
+                    <button 
+                        data-student="${student.id}" 
+                        data-badge="${b.id}"
+                        class="badge-chip-btn active"
+                        title="Abzeichen entfernen: ${b.name}"
+                        style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:0.72rem;font-weight:700;cursor:pointer;transition:all 0.2s;border:1px solid ${b.color};background:${b.color}33;color:${b.color}; shadow: 0 4px 10px ${b.color}22;">
+                        ${b.emoji} ${b.name}
+                    </button>`).join('');
+
+            // Full picker for unassigned badges (hidden by default)
+            const unassignedChips = allBadges
+                .filter(b => !studentBadgeIds.includes(b.id))
+                .map(b => `
+                    <button 
+                        data-student="${student.id}" 
+                        data-badge="${b.id}"
+                        class="badge-chip-btn"
+                        title="Abzeichen hinzufügen: ${b.name}"
+                        style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:0.72rem;font-weight:700;cursor:pointer;transition:all 0.2s;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.4);">
+                        ${b.emoji} ${b.name}
+                    </button>`).join('');
+
+            badgeSection = `
+                <div class="badge-row" style="margin-top:12px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.08);">
+                    <div style="display:flex; flex-wrap:wrap; gap:6px; align-items:center;">
+                        ${earnedChips}
+                        <button class="add-badge-toggle" onclick="this.parentElement.nextElementSibling.classList.toggle('hidden'); this.classList.toggle('active')" style="
+                            width:32px; height:32px; border-radius:10px; border:1px dashed rgba(255,255,255,0.2); background:rgba(255,255,255,0.03); color:rgba(255,255,255,0.5); cursor:pointer; font-weight:800; font-size:1.1rem; display:flex; align-items:center; justify-content:center; transition: all 0.2s;
+                        ">＋</button>
+                    </div>
+                    <div class="badge-picker-extra hidden" style="margin-top:10px; padding:10px; background:rgba(0,0,0,0.2); border-radius:14px; border:1px solid rgba(255,255,255,0.05); animation: fadeIn 0.3s ease-out;">
+                        <div style="font-size:0.65rem; color:var(--text-muted); font-weight:900; margin-bottom:8px; opacity:0.8; letter-spacing:0.05em;">VERFÜGBARE ABZEICHEN:</div>
+                        <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                            ${unassignedChips || '<span style="font-size:0.7rem; color:rgba(255,255,255,0.2);">Alle Abzeichen bereits vergeben.</span>'}
+                        </div>
+                    </div>
+                </div>`;
+        }
 
         item.innerHTML = `
-            <div class="student-info">
+            <div class="student-info" style="display:flex; align-items:center;">
                 <div class="avatar" style="${isVip ? 'box-shadow: 0 0 12px gold; border: 2px solid gold;' : ''}">${student.avatar || student.name.charAt(0)}</div>
                 <div style="flex:1">
-                    <div style="font-weight:700; font-size:1.1rem">${student.name} ${isVip ? `<span style="font-size:0.7rem; font-weight:900; letter-spacing:0.05em; margin-left:8px;">${vipDayText}</span>` : ''}</div>
-                    <div style="display:flex; align-items:center; gap:10px; margin-top:4px;">
-                        <div class="subtitle" style="font-size:0.75rem">${dayBadges}</div>
-                        <div style="font-size:0.75rem; color:var(--accent);">🕒 ${student.departureTime || '--:--'}</div>
+                    <div style="font-weight:700; font-size:1.1rem">${student.name} ${isVip ? `<span style="font-size:0.7rem; font-weight:900; letter-spacing:0.05em;">${vipDayText}</span>` : ''}</div>
+                    <div class="subtitle" style="font-size:0.75rem">ID: ${student.id} · ${fullCards} Karte(n)</div>
+                </div>
+                <!-- Compact Attendance Chips -->
+                <div class="attendance-chips-container" style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">
+                    <div style="display:flex; gap:4px;">
+                        ${['mon', 'tue', 'wed', 'thu', 'fri'].map(day => {
+                            const active = student.attendance && student.attendance[day];
+                            const chars = { mon:'M', tue:'D', wed:'M', thu:'D', fri:'F' };
+                            return `<div class="attendance-chip ${active ? 'active' : ''}" onclick="event.stopPropagation(); toggleAttendance('${student.id}', '${day}', ${active})" title="${day.toUpperCase()}">${chars[day]}</div>`;
+                        }).join('')}
                     </div>
-                    ${student.birthday ? `<div style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">🎂 ${formatDate(student.birthday)}</div>` : ''}
+                    <!-- Pickup Time Toggle -->
+                    <div class="pickup-toggle-container" style="display:flex; background:rgba(255,255,255,0.05); border-radius:8px; padding:2px; border:1px solid rgba(255,255,255,0.1);">
+                        <button onclick="updatePickupTime('${student.id}', '15:30')" class="pickup-btn ${student.pickupTime === '15:30' ? 'active' : ''}" style="border:none; background:none; color:${student.pickupTime === '15:30' ? 'white' : 'rgba(255,255,255,0.3)'}; font-size:0.6rem; font-weight:800; padding:2px 6px; border-radius:6px; cursor:pointer;">15:30</button>
+                        <button onclick="updatePickupTime('${student.id}', '16:30')" class="pickup-btn ${student.pickupTime === '16:30' ? 'active' : ''}" style="border:none; background:none; color:${student.pickupTime === '16:30' ? 'white' : 'rgba(255,255,255,0.3)'}; font-size:0.6rem; font-weight:800; padding:2px 6px; border-radius:6px; cursor:pointer;">16:30</button>
+                    </div>
                 </div>
             </div>
+
+            ${badgeSection}
+
             <div class="admin-row-actions">
+                <div class="admin-stamp-control">
+                    <input type="number" class="admin-stamp-input" value="${student.stamps}" onchange="updateStamps('${student.id}', this.value)">
+                    <span class="subtitle" style="margin-left:8px">Stempel</span>
+                </div>
+                
                 <div class="admin-button-group" style="flex-wrap:wrap; justify-content:flex-end;">
-                    <button onclick="toggleVip('${student.id}', ${!isVip})" class="icon-btn-small" style="padding:4px 8px; font-size:0.7rem; font-weight:800; ${isVip ? 'color:gold; border-color:gold;' : 'color:var(--text-muted);'}" title="${isVip ? 'Abzeichen entziehen' : 'Abzeichen vergeben'}">
-                        🏆 ${isVip ? 'Wochenschüler' : 'Setzen?'}
+                    ${vipEligible ? `<button onclick="toggleVip('${student.id}', ${!isVip})" class="icon-btn-small" style="padding:4px 8px; font-size:0.7rem; font-weight:800; ${isVip ? 'color:gold; border-color:gold;' : 'color:var(--text-muted);'}" title="${isVip ? 'VIP entziehen' : 'VIP vergeben'}">
+                        ⭐ ${isVip ? 'VIP' : 'VIP?'}
+                    </button>` : ''}
+                    <button class="icon-btn-small" onclick="Logbook.showHistory('${student.id}')" title="Pädagogisches Archiv / Logbuch" style="color: #22c55e;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                     </button>
-                    <button class="icon-btn-small" onclick="promptEditAttendance('${student.id}')" title="Tage/Zeit bearbeiten"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
                     <button class="icon-btn-small" onclick="copyLink('${student.id}')" title="Link"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></button>
                     <button class="icon-btn-small" onclick="deleteStudent('${student.id}')" style="color:#ff6b6b"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
                 </div>
@@ -491,16 +725,28 @@ function renderAdminList(filter = "") {
         `;
         container.appendChild(item);
     });
+    // NOTE: Badge click listener is set up ONCE in DOMContentLoaded — not here.
 }
 
-function formatDate(s) { const [y,m,d] = s.split('-'); return `${d}.${m}.${y}`; }
+async function toggleStudentBadge(studentId, badgeId) {
+    // Fallback (kept for compatibility)
+    const student = window.students.find(s => s.id === studentId);
+    if (!student) return;
+    const current = student.badges || [];
+    const newBadges = current.includes(badgeId)
+        ? current.filter(id => id !== badgeId)
+        : [...current, badgeId];
+    await assignBadgesToStudent(studentId, newBadges);
+}
+
+function formatDate(s) { const [y, m, d] = s.split('-'); return `${d}.${m}.${y}`; }
 
 async function toggleVip(id, activate) {
     let reason = '';
     if (activate) {
-        reason = prompt('Grund für Abzeichen (Wochenschüler):') || 'Leistung der Woche';
+        reason = prompt('VIP-Grund (optional, z.B. "1 volle Karte erreicht"):') || '';
     } else {
-        if (!confirm(`Abzeichen entziehen?`)) return;
+        if (!confirm(`VIP-Status entziehen?`)) return;
     }
     try {
         const res = await fetch(`${API_URL}/students/${id}/vip`, {
@@ -524,66 +770,68 @@ function copyLink(id) {
 }
 
 async function createNewStudent() {
-    const name = document.getElementById('new-student-name').value;
-    const b = document.getElementById('new-student-birthday').value;
-    const departure = document.getElementById('new-student-departure').value;
+    const nameInput = document.getElementById('new-student-name');
+    const birthdayInput = document.getElementById('new-student-birthday');
+    const pickupInput = document.getElementById('new-student-pickup');
     
-    const dayCheckboxes = document.querySelectorAll('.attendance-day:checked');
-    const attendanceDays = Array.from(dayCheckboxes).map(cb => cb.value);
-
-    if (!name) return;
-    const response = await fetch(`${API_URL}/students`, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-            name, 
-            birthday: b, 
-            attendanceDays, 
-            departureTime: departure
-        })
+    const name = nameInput.value.trim();
+    const birthday = birthdayInput.value;
+    const pickupTime = pickupInput.value;
+    
+    // Collect attendance from chips
+    const attendance = {};
+    document.querySelectorAll('.new-student-chip').forEach(chip => {
+        attendance[chip.dataset.day] = chip.classList.contains('active');
     });
-    if (response.ok) {
-        document.getElementById('new-student-name').value = '';
-        document.getElementById('new-student-departure').value = '';
-        document.querySelectorAll('.attendance-day').forEach(cb => cb.checked = false);
-        fetchStudents();
+
+    if (!name) {
+        alert("Bitte einen Namen eingeben.");
+        return;
     }
-}
 
-async function promptEditAttendance(id) {
-    const s = students.find(x => x.id === id);
-    if (!s) return;
-    
-    const newDaysStr = prompt("Betreuungstage (Mo,Di,Mi,Do,Fr durch Komma getrennt):", s.attendanceDays?.join(',') || "");
-    const newTime = prompt("Geht-Zeit (z.B. 16:00):", s.departureTime || "");
-    
-    if (newDaysStr === null || newTime === null) return;
-    
-    const attendanceDays = newDaysStr.split(',')
-        .map(d => d.trim())
-        .filter(d => ['Mo','Di','Mi','Do','Fr'].includes(d));
-    
-    await fetch(`${API_URL}/students/${id}`, {
-        method: 'PATCH',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({
-            attendanceDays,
-            departureTime: newTime
-        })
-    });
-    fetchStudents();
+    try {
+        const response = await fetch(`${API_URL}/students`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, birthday, attendance, pickupTime })
+        });
+
+        if (response.ok) {
+            // Reset fields
+            nameInput.value = '';
+            birthdayInput.value = '';
+            document.querySelectorAll('.new-student-chip').forEach(chip => chip.classList.remove('active'));
+            
+            // Reset pickup selection UI
+            pickupInput.value = '15:30';
+            const btn1530 = document.getElementById('new-pickup-btn-1530');
+            const btn1630 = document.getElementById('new-pickup-btn-1630');
+            if (btn1530 && btn1630) {
+                btn1530.classList.add('active');
+                btn1530.style.color = 'white';
+                btn1630.classList.remove('active');
+                btn1630.style.color = 'rgba(255,255,255,0.3)';
+            }
+
+            fetchStudents();
+        } else {
+            alert("Fehler beim Erstellen des Schülers.");
+        }
+    } catch (err) {
+        alert("Verbindungsfehler.");
+    }
 }
 
 async function deleteStudent(id) {
     if (!confirm("Löschen?")) return;
-    await fetch(`${API_URL}/students/${id}`, {method:'DELETE'});
+    await fetch(`${API_URL}/students/${id}`, { method: 'DELETE' });
     fetchStudents();
 }
 
 async function updateStamps(id, c) {
     await fetch(`${API_URL}/students/${id}`, {
         method: 'PATCH',
-        headers: {'Content-Type':'application/json'},
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             stamps: parseInt(c),
             reason: "Admin-Korrektur"
@@ -592,11 +840,81 @@ async function updateStamps(id, c) {
     fetchStudents();
 }
 
+async function toggleAttendance(id, day, currentVal) {
+    const newVal = !currentVal;
+    
+    const container = document.getElementById('admin-student-list');
+    const studentCard = Array.from(container.children).find(el => el.innerHTML.includes(id));
+    if (studentCard) {
+        const chips = studentCard.querySelectorAll('.attendance-chip');
+        const dayIdx = ['mon', 'tue', 'wed', 'thu', 'fri'].indexOf(day);
+        if (chips[dayIdx]) {
+            chips[dayIdx].classList.toggle('active', newVal);
+            chips[dayIdx].setAttribute('onclick', `event.stopPropagation(); toggleAttendance('${id}', '${day}', ${newVal})`);
+        }
+    }
+
+    await updateAttendance(id, day, newVal);
+}
+
+async function updateAttendance(id, day, val) {
+    const attObj = {};
+    attObj[day] = val;
+    
+    try {
+        await fetch(`${API_URL}/students/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ attendance: attObj })
+        });
+        
+        // Update local memory
+        const s = window.students.find(x => x.id === id);
+        if (s) {
+            if (!s.attendance) s.attendance = {};
+            s.attendance[day] = val;
+        }
+    } catch (err) {
+        console.error("Attendance update error:", err);
+    }
+}
+
+async function updatePickupTime(id, time) {
+    try {
+        await fetch(`${API_URL}/students/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pickupTime: time })
+        });
+        
+        // Update local memory and UI instant feedback
+        const s = window.students.find(x => x.id === id);
+        if (s) {
+            s.pickupTime = time;
+        }
+
+        // Silent UI update: find the card and toggle active class on buttons
+        const container = document.getElementById('admin-student-list');
+        const card = Array.from(container.children).find(el => el.innerHTML.includes(id));
+        if (card) {
+            const btns = card.querySelectorAll('.pickup-btn');
+            btns.forEach(btn => {
+                const isActive = btn.innerText === time;
+                btn.classList.toggle('active', isActive);
+                btn.style.color = isActive ? 'white' : 'rgba(255,255,255,0.3)';
+                if (isActive) btn.parentElement.querySelector('.active')?.classList.remove('active');
+            });
+        }
+    } catch (err) {
+        console.error("Pickup update error:", err);
+    }
+}
+
 function showStatus(m, t) { console.log(m); }
 // System Settings
 async function loadSettings() {
     try {
-        const response = await fetch(`${API_URL}/settings`);
+        const response = await fetch(`${API_URL}/settings`, { cache: 'no-store' });
         if (response.ok) {
             const settings = await response.json();
             currentSettings = settings;
@@ -617,7 +935,8 @@ async function loadSettings() {
             updateField('setting-community-visible', settings.communityGoalVisible !== false, true);
             updateField('setting-community-title', settings.communityTitle || "Pizza-Party");
             updateField('setting-community-target', settings.communityTarget || 500);
-            
+            updateField('setting-tama-ignore-freeze', settings.tamagotchi?.ignoreWeekendFreeze || false, true);
+
             if (settings.activities) {
                 const text = settings.activities.map(a => `${a.emoji} ${a.label}`).join('\n');
                 updateField('setting-activities', text);
@@ -625,52 +944,59 @@ async function loadSettings() {
 
             if (settings.groupReward) {
                 updateField('setting-group-title', settings.groupReward.title || "Filmtag");
-                updateField('setting-group-target', settings.groupReward.target || 8);
-                
-                // Static displays
-                document.getElementById('group-reward-title-display').innerText = `${settings.groupReward.icon || '🎬'} ${settings.groupReward.title}`;
-                document.getElementById('group-reward-status').innerText = `${settings.groupReward.current} / ${settings.groupReward.target} Stempel`;
-                const progress = Math.min(100, (settings.groupReward.current / settings.groupReward.target) * 100);
-                document.getElementById('group-reward-bar').style.width = `${progress}%`;
-                
-                const isGoalReached = settings.groupReward.current >= settings.groupReward.target;
-                const isApproved = settings.groupReward.isApproved;
+                document.getElementById('setting-group-target').value = settings.groupReward?.target || 8;
 
-                if (isGoalReached && !isApproved) {
-                    document.getElementById('group-reward-approve-btn').classList.remove('hidden');
-                    document.getElementById('group-reward-reset-btn').classList.add('hidden');
-                } else if (isApproved) {
-                    document.getElementById('group-reward-approve-btn').classList.add('hidden');
-                    document.getElementById('group-reward-reset-btn').classList.remove('hidden');
-                } else {
-                    document.getElementById('group-reward-approve-btn').classList.add('hidden');
-                    document.getElementById('group-reward-reset-btn').classList.add('hidden');
+                // Static displays
+                const titleDisp = document.getElementById('group-reward-title-display');
+                if (titleDisp) {
+                    titleDisp.innerText = `${settings.groupReward.icon || '🎬'} ${settings.groupReward.title}`;
+                    document.getElementById('group-reward-status').innerText = `${settings.groupReward.current} / ${settings.groupReward.target} Stempel`;
+                    const progress = Math.min(100, (settings.groupReward.current / settings.groupReward.target) * 100);
+                    document.getElementById('group-reward-bar').style.width = `${progress}%`;
+
+                    const isGoalReached = settings.groupReward.current >= settings.groupReward.target;
+                    const isApproved = settings.groupReward.isApproved;
+
+                    const resetBtn = document.getElementById('group-reward-reset-btn');
+                    if (resetBtn) {
+                        if (isGoalReached) {
+                            resetBtn.classList.remove('hidden');
+                        } else {
+                            resetBtn.classList.add('hidden');
+                        }
+                    }
                 }
             }
 
-            updateField('setting-vip-duration', settings.vipDurationDays || 7);
-            window._vipDuration = settings.vipDurationDays || 7;
+            updateField('setting-vip-duration', settings.vipDurationDays || 3);
+            window._vipDuration = settings.vipDurationDays || 3;
 
             updateField('setting-daily-notes', settings.dailyNotes || "");
             updateField('setting-current-projects', settings.currentProjects || "");
+            updateField('setting-upcoming-projects', settings.upcomingProjects || "");
             updateField('setting-today-plan', settings.todayPlan || "");
+
+
+
+
         }
-    } catch (err) {}
+    } catch (err) { }
 }
 
 async function saveSettings() {
     const communityVisible = document.getElementById('setting-community-visible').checked;
     const communityTitle = document.getElementById('setting-community-title').value || "Pizza-Party";
     const target = parseInt(document.getElementById('setting-community-target').value);
-    
+
     const activitiesText = document.getElementById('setting-activities').value;
     const dailyNotes = document.getElementById('setting-daily-notes')?.value || "";
     const currentProjects = document.getElementById('setting-current-projects')?.value || "";
+    const upcomingProjects = document.getElementById('setting-upcoming-projects')?.value || "";
     const todayPlan = document.getElementById('setting-today-plan')?.value || "";
     const groupTitle = document.getElementById('setting-group-title').value;
     const groupTarget = parseInt(document.getElementById('setting-group-target').value);
     const vipDuration = parseInt(document.getElementById('setting-vip-duration')?.value) || 3;
-    
+
     if (isNaN(target) || target <= 0) {
         alert("Bitte ein gültiges Ziel eingeben.");
         return;
@@ -680,8 +1006,25 @@ async function saveSettings() {
         .map(line => line.trim())
         .filter(line => line.length > 0)
         .map(line => {
+            // Use Intl.Segmenter to correctly handle multi-character emojis (like 🏃‍♀️ or 👨‍👩‍👧)
+            const segmenter = new Intl.Segmenter('en', { granularity: 'grapheme' });
+            const segments = Array.from(segmenter.segment(line));
+            const firstSegment = segments[0]?.segment || "";
+
+            // Check if first segment is an emoji (rough check: non-ASCII and not punctuation)
+            const isEmoji = /\p{Extended_Pictographic}/u.test(firstSegment);
+
+            if (isEmoji) {
+                const label = line.substring(firstSegment.length).trim();
+                return { emoji: firstSegment, label: label || "Aktivität" };
+            }
+
+            // Fallback to space-based splitting if no emoji at start
             const firstSpace = line.indexOf(' ');
-            if (firstSpace === -1) return { emoji: "🌟", label: line };
+            if (firstSpace === -1) {
+                return { emoji: "✨", label: line };
+            }
+
             return {
                 emoji: line.substring(0, firstSpace).trim(),
                 label: line.substring(firstSpace).trim()
@@ -691,7 +1034,7 @@ async function saveSettings() {
     try {
         // Use our cached currentSettings to preserve server-only values (like reward progress)
         // while updating with the new values from the form.
-        const payload = { 
+        const payload = {
             ...(currentSettings || {}),
             communityTarget: target,
             communityTitle: communityTitle,
@@ -700,12 +1043,14 @@ async function saveSettings() {
             vipDurationDays: vipDuration,
             dailyNotes: dailyNotes,
             currentProjects: currentProjects,
+            upcomingProjects: upcomingProjects,
             todayPlan: todayPlan,
             groupReward: {
-                ...(currentSettings?.groupReward || { current: 0, active: false, icon: "🎬" }),
+                ...(currentSettings?.groupReward || { current: 0, icon: "🎬" }),
                 title: groupTitle,
                 target: groupTarget
-            }
+            },
+
         };
 
         const response = await fetch(`${API_URL}/settings`, {
@@ -714,9 +1059,7 @@ async function saveSettings() {
             body: JSON.stringify(payload)
         });
         if (response.ok) {
-            // After successful save, update our local cache and clear lastLoaded tracking
-            // so the next poll can update the inputs if needed.
-            lastLoadedValues = {}; 
+            lastLoadedValues = {};
             alert("Einstellungen gespeichert!");
             loadSettings();
         }
@@ -725,21 +1068,6 @@ async function saveSettings() {
     }
 }
 
-async function approveGroupReward() {
-    if (!confirm("Gruppen-Belohnung (z.B. Filmtag) jetzt genehmigen? Ein Konfetti-Regen wird auf der Infotafel ausgelöst.")) return;
-    try {
-        const response = await fetch(`${API_URL}/settings/group-approve`, { method: 'POST' });
-        if (response.ok) {
-            alert("Belohnung genehmigt! 🎉");
-            await loadSettings();
-        } else {
-            const errBody = await response.text();
-            alert(`Fehler: ${response.status} - ${errBody}`);
-        }
-    } catch (err) {
-        alert("Verbindungsfehler bei der Genehmigung: " + err.message);
-    }
-}
 
 async function resetGroupReward() {
     if (!confirm("Bist du sicher? Dies setzt den Fortschritt auf 0 zurück. Tu dies erst, wenn der Filmtag vorbei ist.")) return;
@@ -755,4 +1083,141 @@ async function resetGroupReward() {
     } catch (err) {
         alert("Verbindungsfehler beim Zurücksetzen: " + err.message);
     }
+}
+
+// =============================================================
+// BADGE MANAGEMENT
+// =============================================================
+
+let allBadges = [];
+
+async function fetchBadges() {
+    try {
+        const res = await fetch(`${API_URL}/badges`);
+        if (res.ok) {
+            allBadges = await res.json();
+            renderBadgeList();
+        }
+    } catch (err) { console.error('Badge load error:', err); }
+}
+
+function renderBadgeList() {
+    const el = document.getElementById('badge-list');
+    if (!el) return;
+    if (allBadges.length === 0) {
+        el.innerHTML = '<span style="color:var(--text-muted);font-size:0.8rem;">Noch keine Abzeichen erstellt.</span>';
+        return;
+    }
+    el.innerHTML = allBadges.map(b => `
+        <div style="display:inline-flex;align-items:center;gap:6px;padding:5px 10px;background:${b.color}22;border:1px solid ${b.color};border-radius:20px;font-size:0.8rem;">
+            <span>${b.emoji}</span>
+            <span style="font-weight:700;color:${b.color};">${b.name}</span>
+            <button onclick="deleteBadge('${b.id}')" style="background:transparent;border:none;color:#ef4444;cursor:pointer;padding:0;font-size:0.85rem;line-height:1;">✕</button>
+        </div>`).join('');
+}
+
+async function createBadge() {
+    const emoji = document.getElementById('new-badge-emoji').value.trim() || '🏅';
+    const name = document.getElementById('new-badge-name').value.trim();
+    const desc = document.getElementById('new-badge-desc').value.trim();
+    const color = document.getElementById('new-badge-color').value;
+    const msg = document.getElementById('badge-status-msg');
+
+    if (!name) { alert('Bitte einen Namen eingeben!'); return; }
+    try {
+        const res = await fetch(`${API_URL}/badges`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ emoji, name, description: desc, color })
+        });
+        if (res.ok) {
+            document.getElementById('new-badge-emoji').value = '';
+            document.getElementById('new-badge-name').value = '';
+            document.getElementById('new-badge-desc').value = '';
+            msg.textContent = `✅ "${name}" erstellt!`;
+            msg.style.display = 'block';
+            msg.style.color = 'var(--success)';
+            setTimeout(() => msg.style.display = 'none', 3000);
+            await fetchBadges();
+        }
+    } catch (err) { alert('Fehler: ' + err.message); }
+}
+
+async function deleteBadge(id) {
+    if (!confirm('Abzeichen wirklich löschen?')) return;
+    await fetch(`${API_URL}/badges/${id}`, { method: 'DELETE' });
+    await fetchBadges();
+}
+
+async function assignBadgesToStudent(studentId, newBadgeIds) {
+    await fetch(`${API_URL}/students/${studentId}/badges`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ badges: newBadgeIds })
+    });
+    await fetchStudents();
+}
+
+// =============================================================
+// STUDENT OF THE WEEK
+// =============================================================
+
+function populateSotwDropdown() {
+    const sel = document.getElementById('sotw-student-select');
+    if (!sel) return;
+    const current = sel.value;
+    sel.innerHTML = '<option value="">-- Schüler auswählen --</option>';
+    [...students].sort((a, b) => a.name.localeCompare(b.name)).forEach(s => {
+        sel.innerHTML += `<option value="${s.id}" ${s.id === current ? 'selected' : ''}>${s.name}</option>`;
+    });
+}
+
+function renderSotwCurrent() {
+    if (!currentSettings) return;
+    const sotw = currentSettings.studentOfWeek;
+    const el = document.getElementById('sotw-current');
+    if (!el) return;
+    if (sotw && sotw.studentId) {
+        const student = students.find(s => s.id === sotw.studentId);
+        el.style.display = 'block';
+        el.innerHTML = `<strong>Aktuell:</strong> ${student ? student.name : sotw.studentId}${sotw.reason ? ' — ' + sotw.reason : ''}`;
+        document.getElementById('sotw-student-select').value = sotw.studentId;
+        document.getElementById('sotw-reason').value = sotw.reason || '';
+    } else {
+        el.style.display = 'none';
+    }
+}
+
+async function saveStudentOfWeek() {
+    const studentId = document.getElementById('sotw-student-select').value;
+    const reason = document.getElementById('sotw-reason').value.trim();
+    if (!studentId) { alert('Bitte einen Schüler auswählen!'); return; }
+    const payload = {
+        ...(currentSettings || {}),
+        studentOfWeek: { studentId, reason, grantedAt: new Date().toISOString() }
+    };
+    const res = await fetch(`${API_URL}/settings`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+    if (res.ok) {
+        currentSettings = payload;
+        renderSotwCurrent();
+        alert('⭐ Schüler der Woche gespeichert!');
+    }
+}
+
+async function clearStudentOfWeek() {
+    if (!confirm('Schüler der Woche wirklich löschen?')) return;
+    const payload = { ...(currentSettings || {}), studentOfWeek: null };
+    await fetch(`${API_URL}/settings`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+    currentSettings = payload;
+    document.getElementById('sotw-student-select').value = '';
+    document.getElementById('sotw-reason').value = '';
+    document.getElementById('sotw-current').style.display = 'none';
 }

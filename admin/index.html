@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="de">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,16 +9,21 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="admin.css?v=2">
+    <link rel="stylesheet" href="logbook.css?v=1">
+    <link rel="stylesheet" href="appointments.css?v=1">
 </head>
+
 <body>
     <!-- Login Overlay -->
     <div id="login-overlay" style="display: none;">
         <div class="login-card">
             <h2>Admin Login</h2>
             <p style="color: var(--text-muted); margin-bottom: 1.5rem; font-size: 0.9rem;">Bitte Admin PIN eingeben</p>
-            <input type="password" id="admin-pin-input" maxlength="4" placeholder="••••" autofocus onkeydown="if(event.key==='Enter') verifyAdminPin()">
+            <input type="password" id="admin-pin-input" maxlength="4" placeholder="••••" autofocus
+                onkeydown="if(event.key==='Enter') verifyAdminPin()">
             <button onclick="verifyAdminPin()">Einloggen</button>
-            <button onclick="window.location.href='../index.html'" style="margin-top: 10px; background: transparent; border: 1px solid var(--glass-border);">Abbrechen</button>
+            <button onclick="window.location.href='../index.html'"
+                style="margin-top: 10px; background: transparent; border: 1px solid var(--glass-border);">Abbrechen</button>
         </div>
     </div>
 
@@ -25,170 +31,325 @@
         <header>
             <div class="admin-title-area">
                 <h1>Admin Dashboard</h1>
-                <p class="subtitle">Infotafel & Schüler Management</p>
+                <p class="subtitle">Effiziente Verwaltung der Stempelkarten</p>
             </div>
             <button class="back-btn" onclick="window.location.href='../index.html'">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 12H5M12 19l-7-7 7-7" />
+                </svg>
                 Zur Schüler-App
             </button>
         </header>
 
-        <!-- Stats Overview (Hidden for Neualm) -->
-        <div class="stats-row" style="display:none;">
-            <div class="stat-card">
-                <span class="stat-label">Schüler Gesamt</span>
-                <span id="stat-total-students" class="stat-value">--</span>
+        <!-- Top Navigation Row -->
+        <div class="top-nav-row">
+            <!-- Birthdays (Moved from Sidebar) -->
+            <div class="nav-card birthdays">
+                <div class="nav-icon">🎂</div>
+                <div class="nav-info">
+                    <h3>Geburtstage</h3>
+                    <div id="birthday-dashboard" class="subtitle" style="font-size: 0.7rem; line-height: 1.2;">
+                        Lade...
+                    </div>
+                </div>
             </div>
-            <div class="stat-card" style="border-color: var(--accent);">
-                <span class="stat-label">Offene Anfragen</span>
-                <span id="stat-pending-redemptions" class="stat-value">--</span>
+            <!-- AI Content Lab -->
+            <div class="nav-card lab" onclick="window.location.href='../kreativ.html'">
+                <div class="nav-icon">✨</div>
+                <div class="nav-info">
+                    <h3>AI Content Lab</h3>
+                    <p>Ideen generieren</p>
+                </div>
             </div>
-            <div class="stat-card" style="border-color: var(--success);">
-                <span class="stat-label">Stempel vergeben</span>
-                <span id="stat-total-stamps" class="stat-value">--</span>
+
+            <!-- Content Kalender -->
+            <div class="nav-card planer" onclick="window.location.href='../planer.html'">
+                <div class="nav-icon">📅</div>
+                <div class="nav-info">
+                    <h3>Content-Kalender</h3>
+                    <p>Projekte planen</p>
+                </div>
             </div>
-            <div class="stat-card">
-                <span class="stat-label">Belohnungen</span>
-                <span id="stat-total-rewards" class="stat-value">--</span>
+
+            <!-- Logbuch Link -->
+            <div class="nav-card logbook" id="nav-logbook-btn">
+                <div class="nav-icon">📖</div>
+                <div class="nav-info">
+                    <h3>Pädagog. Logbuch</h3>
+                    <p>Berichte & Dokumentation</p>
+                </div>
+            </div>
+
+            <!-- Termine Link -->
+            <div class="nav-card appointments" id="nav-appointments-btn"
+                style="border-left: 4px solid var(--primary-light);">
+                <div class="nav-icon">🕒</div>
+                <div class="nav-info">
+                    <h3>Termin-Planer</h3>
+                    <p>Ereignisse eintragen</p>
+                </div>
             </div>
         </div>
 
         <div class="dashboard-grid">
             <!-- Sidebar: Management Actions -->
             <aside class="management-sidebar">
-                
+
+                <!-- Compact Stats Card -->
+                <div class="glass-card compact-stats-card">
+                    <div class="compact-stat-item">
+                        <span class="c-stat-label">Schüler</span>
+                        <span id="stat-total-students" class="c-stat-value">--</span>
+                    </div>
+                    <div class="compact-stat-item highlight">
+                        <span class="c-stat-label">Offen</span>
+                        <span id="stat-pending-redemptions" class="c-stat-value">--</span>
+                    </div>
+                    <div class="compact-stat-item">
+                        <span class="c-stat-label">Stempel</span>
+                        <span id="stat-total-stamps" class="c-stat-value">--</span>
+                    </div>
+                    <div class="compact-stat-item">
+                        <span class="c-stat-label">Rewards</span>
+                        <span id="stat-total-rewards" class="c-stat-value">--</span>
+                    </div>
+                </div>
+
                 <!-- Quick Add -->
                 <div class="glass-card">
                     <h3>➕ Neuer Schüler</h3>
                     <div style="display:flex; flex-direction:column; gap:12px;">
                         <input type="text" id="new-student-name" placeholder="Vollständiger Name">
                         <input type="date" id="new-student-birthday" title="Geburtstag">
-                        
-                        <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 12px; border: 1px solid var(--glass-border);">
-                            <label style="font-size:0.75rem; color:var(--text-muted); font-weight:700; display:block; margin-bottom:8px;">BETREUUNGSTAGE</label>
-                            <div style="display:flex; flex-wrap:wrap; gap:8px;">
-                                <label style="font-size:0.8rem; display:flex; align-items:center; gap:4px;"><input type="checkbox" class="attendance-day" value="Mo"> Mo</label>
-                                <label style="font-size:0.8rem; display:flex; align-items:center; gap:4px;"><input type="checkbox" class="attendance-day" value="Di"> Di</label>
-                                <label style="font-size:0.8rem; display:flex; align-items:center; gap:4px;"><input type="checkbox" class="attendance-day" value="Mi"> Mi</label>
-                                <label style="font-size:0.8rem; display:flex; align-items:center; gap:4px;"><input type="checkbox" class="attendance-day" value="Do"> Do</label>
-                                <label style="font-size:0.8rem; display:flex; align-items:center; gap:4px;"><input type="checkbox" class="attendance-day" value="Fr"> Fr</label>
+
+                        <div style="display:flex; flex-direction:column; gap:8px; margin-top: 5px;">
+                            <p style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; margin: 0;">
+                                BETREUUNGSTAGE:</p>
+                            <div style="display:flex; gap:6px;">
+                                <div class="attendance-chip new-student-chip" data-day="mon"
+                                    onclick="this.classList.toggle('active')">M</div>
+                                <div class="attendance-chip new-student-chip" data-day="tue"
+                                    onclick="this.classList.toggle('active')">D</div>
+                                <div class="attendance-chip new-student-chip" data-day="wed"
+                                    onclick="this.classList.toggle('active')">M</div>
+                                <div class="attendance-chip new-student-chip" data-day="thu"
+                                    onclick="this.classList.toggle('active')">D</div>
+                                <div class="attendance-chip new-student-chip" data-day="fri"
+                                    onclick="this.classList.toggle('active')">F</div>
                             </div>
                         </div>
 
-                        <div class="edit-field">
-                            <label style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">Geht-Zeit</label>
-                            <div style="display:flex; gap:8px; margin-bottom:8px;">
-                                <button type="button" class="btn-time-select" onclick="document.getElementById('new-student-departure').value='15:30'">15:30</button>
-                                <button type="button" class="btn-time-select" onclick="document.getElementById('new-student-departure').value='16:30'">16:30</button>
+                        <div style="display:flex; flex-direction:column; gap:8px;">
+                            <p style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; margin: 0;">
+                                GEHT-ZEIT:</p>
+                            <div class="pickup-toggle-container"
+                                style="display:flex; background:rgba(255,255,255,0.05); border-radius:8px; padding:2px; border:1px solid rgba(255,255,255,0.1); width: fit-content;">
+                                <button id="new-pickup-btn-1530" onclick="selectNewPickup(this, '15:30')"
+                                    class="pickup-btn active"
+                                    style="border:none; background:none; color:white; font-size:0.7rem; font-weight:800; padding:4px 10px; border-radius:6px; cursor:pointer;">15:30</button>
+                                <button id="new-pickup-btn-1630" onclick="selectNewPickup(this, '16:30')"
+                                    class="pickup-btn"
+                                    style="border:none; background:none; color:rgba(255,255,255,0.3); font-size:0.7rem; font-weight:800; padding:4px 10px; border-radius:6px; cursor:pointer;">16:30</button>
                             </div>
-                            <input type="text" id="new-student-departure" placeholder="Oder händisch: 16:00" style="width:100%;">
+                            <input type="hidden" id="new-student-pickup" value="15:30">
                         </div>
 
-                        <button id="add-btn" class="add-stamp-btn">Hinzufügen</button>
+                        <button id="add-btn" class="add-stamp-btn" style="margin-top: 5px;">Hinzufügen</button>
                     </div>
                     <p id="status-msg" style="font-size: 0.8rem; margin-top: 10px; display:none;"></p>
                 </div>
 
 
 
-                <!-- Redemption Requests (Hidden) -->
-                <div class="glass-card" style="border-color: var(--accent); display:none;">
+                <!-- Redemption Requests -->
+                <div class="glass-card" style="border-color: var(--accent);">
                     <h3>🎁 Einlösungs-Anfragen</h3>
                     <div id="redemption-dashboard" class="subtitle">
                         Lade Anfragen...
                     </div>
                 </div>
 
-                <!-- Birthdays -->
-                <div class="glass-card" style="border-color: var(--primary-light);">
-                    <h3>🎂 Baldige Geburtstage</h3>
-                    <div id="birthday-dashboard" class="subtitle">
-                        Lade Geburtstage...
+
+                <!-- Schüler der Woche -->
+                <div class="glass-card" style="border-color: #f59e0b; margin-top: 15px;">
+                    <h3 style="color: #f59e0b;">⭐ Schüler der Woche</h3>
+                    <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
+                        <select id="sotw-student-select"
+                            style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.3); color: white; font-size: 0.9rem;">
+                            <option value="">-- Schüler auswählen --</option>
+                        </select>
+                        <input type="text" id="sotw-reason" placeholder="Grund (z.B. 'Immer hilfsbereit!')"
+                            style="width: 100%;">
+                        <div style="display: flex; gap: 8px;">
+                            <button onclick="saveStudentOfWeek()" class="add-stamp-btn"
+                                style="flex: 2; padding: 8px; font-size: 0.85rem;">⭐ Speichern</button>
+                            <button onclick="clearStudentOfWeek()"
+                                style="flex: 1; padding: 8px; background: transparent; border: 1px solid var(--glass-border); border-radius: 10px; color: var(--text-muted); cursor: pointer; font-size: 0.8rem;">Löschen</button>
+                        </div>
+                        <div id="sotw-current"
+                            style="font-size: 0.8rem; color: var(--text-muted); padding: 8px; background: rgba(255,255,255,0.03); border-radius: 8px; display: none;">
+                        </div>
                     </div>
                 </div>
 
-                <!-- Group Reward (Hidden) -->
-                <div class="glass-card" style="border-color: var(--accent); display:none;">
+
+                <!-- Group Reward -->
+                <div class="glass-card" style="border-color: var(--accent);">
                     <h3 id="group-reward-title-display">🎬 Filmtag</h3>
                     <div id="group-reward-status" style="font-size: 1.2rem; font-weight: 800; margin: 10px 0;">
-                        0 / 8 Punkte
+                        0 / 8 Stempel
                     </div>
                     <div class="reward-progress-bg" style="height: 10px; margin-bottom: 15px;">
                         <div id="group-reward-bar" class="reward-progress-bar" style="width: 0%"></div>
                     </div>
-                    <button id="group-reward-approve-btn" onclick="approveGroupReward()" class="redeem-btn hidden" style="width:100%; background:var(--success);">Filmtag Genehmigen</button>
-                    <button id="group-reward-reset-btn" onclick="resetGroupReward()" class="redeem-btn hidden" style="width:100%; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2);">Fortschritt Zurücksetzen</button>
+                    <button id="group-reward-reset-btn" onclick="resetGroupReward()" class="redeem-btn hidden"
+                        style="width:100%; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2);">Fortschritt
+                        Zurücksetzen</button>
                     <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 8px;">
                         Gesammelte Spenden für das nächste Gruppen-Event.
                     </p>
                 </div>
 
+
                 <!-- System Settings -->
                 <div class="glass-card" style="border-color: var(--primary-light);">
                     <h3>⚙️ System-Einstellungen</h3>
                     <div style="display:flex; flex-direction:column; gap:12px;">
-                        <div style="display:none;">
-                            <div style="display:flex; align-items:center; gap:10px; margin-bottom:0.5rem;">
-                                <input type="checkbox" id="setting-community-visible" style="width:18px; height:18px;">
-                                <label for="setting-community-visible" style="font-size:0.85rem; font-weight:600;">Globales Gruppen-Ziel anzeigen</label>
+                        <div style="display:flex; align-items:center; gap:10px; margin-bottom:0.5rem;">
+                            <input type="checkbox" id="setting-community-visible" style="width:18px; height:18px;">
+                            <label for="setting-community-visible" style="font-size:0.85rem; font-weight:600;">Globales
+                                Gruppen-Ziel anzeigen</label>
+                        </div>
+                        <div style="display:flex; gap:10px;">
+                            <div class="edit-field" style="flex:2">
+                                <label style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">Titel (z.B.
+                                    Pizza-Party 🍕)</label>
+                                <input type="text" id="setting-community-title" placeholder="Pizza-Party"
+                                    style="width:100%;">
                             </div>
-                            <div style="display:flex; gap:10px;">
-                                <div class="edit-field" style="flex:2">
-                                    <label style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">Titel (z.B. Pizza-Party 🍕)</label>
-                                    <input type="text" id="setting-community-title" placeholder="Pizza-Party" style="width:100%;">
-                                </div>
-                                <div class="edit-field" style="flex:1">
-                                    <label style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">Ziel</label>
-                                    <input type="number" id="setting-community-target" placeholder="500" style="width:100%; text-align:center;">
-                                </div>
-                            </div>
-                        </div>
-                        <div class="edit-field">
-                            <label style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">Aktivitäten (Format: 🏀 Sport-AG)</label>
-                            <textarea id="setting-activities" placeholder="🏀 Sport-AG&#10;📝 Hausaufgaben" style="width:100%; height:80px; font-size:0.85rem; padding:8px; border-radius:10px; border:1px solid var(--glass-border); background:rgba(255,255,255,0.05); color:white; resize:vertical;"></textarea>
-                        </div>
-                        <div class="edit-field">
-                            <label style="font-size:0.75rem; color:var(--accent); font-weight:700;">Wichtiges für heute (Infotafel)</label>
-                            <textarea id="setting-daily-notes" placeholder="z.B. Schüler Xy geht um 13:00" style="width:100%; height:60px; font-size:0.85rem; padding:8px; border-radius:10px; border:1px solid var(--glass-border); background:rgba(255,255,255,0.05); color:white; resize:vertical;"></textarea>
-                        </div>
-                        <div class="edit-field">
-                            <label style="font-size:0.75rem; color:var(--primary-light); font-weight:700;">Aktuelle Projekte (Infotafel)</label>
-                            <textarea id="setting-current-projects" placeholder="z.B. Osterbasteln 🐣" style="width:100%; height:60px; font-size:0.85rem; padding:8px; border-radius:10px; border:1px solid var(--glass-border); background:rgba(255,255,255,0.05); color:white; resize:vertical;"></textarea>
-                        </div>
-                        <div class="edit-field">
-                            <label style="font-size:0.75rem; color:var(--success); font-weight:700;">Heutiger Plan (Infotafel)</label>
-                            <textarea id="setting-today-plan" placeholder="z.B. 14:00 - Sport&#10;15:00 - Snack" style="width:100%; height:80px; font-size:0.85rem; padding:8px; border-radius:10px; border:1px solid var(--glass-border); background:rgba(255,255,255,0.05); color:white; resize:vertical;"></textarea>
-                        </div>
-                        <div style="display:none;">
-                            <div style="display:flex; gap:10px;">
-                                <div class="edit-field" style="flex:2">
-                                    <label style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">Gruppen-Belohnung Titel (Spenden)</label>
-                                    <input type="text" id="setting-group-title" placeholder="Filmtag" style="width:100%;">
-                                </div>
-                                <div class="edit-field" style="flex:1">
-                                    <label style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">Spenden-Ziel</label>
-                                    <input type="number" id="setting-group-target" placeholder="8" style="width:100%; text-align:center;">
-                                </div>
+                            <div class="edit-field" style="flex:1">
+                                <label style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">Ziel</label>
+                                <input type="number" id="setting-community-target" placeholder="500"
+                                    style="width:100%; text-align:center;">
                             </div>
                         </div>
-                        <div style="display:flex; gap:10px; align-items:center; background:rgba(255,215,0,0.05); border:1px solid rgba(255,215,0,0.2); border-radius:12px; padding:12px;">
+                        <div class="edit-field">
+                            <label style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">Aktivitäten
+                                (Format: 🏀 Sport-AG)</label>
+                            <textarea id="setting-activities" placeholder="🏀 Sport-AG&#10;📝 Hausaufgaben"
+                                style="width:100%; height:80px; font-size:0.85rem; padding:8px; border-radius:10px; border:1px solid var(--glass-border); background:rgba(255,255,255,0.05); color:white; resize:vertical;"></textarea>
+                        </div>
+                        <div class="edit-field">
+                            <label style="font-size:0.75rem; color:var(--accent); font-weight:700;">Wichtiges für heute
+                                (Infotafel)</label>
+                            <textarea id="setting-daily-notes" placeholder="z.B. Schüler Xy geht um 13:00"
+                                style="width:100%; height:60px; font-size:0.85rem; padding:8px; border-radius:10px; border:1px solid var(--glass-border); background:rgba(255,255,255,0.05); color:white; resize:vertical;"></textarea>
+                        </div>
+                        <div class="edit-field">
+                            <label style="font-size:0.75rem; color:var(--primary-light); font-weight:700;">Aktuelle
+                                Projekte (Infotafel)</label>
+                            <textarea id="setting-current-projects" placeholder="z.B. Osterbasteln 🐣"
+                                style="width:100%; height:60px; font-size:0.85rem; padding:8px; border-radius:10px; border:1px solid var(--glass-border); background:rgba(255,255,255,0.05); color:white; resize:vertical;"></textarea>
+                        </div>
+                        <div class="edit-field">
+                            <label style="font-size:0.75rem; color:var(--success); font-weight:700;">Heutiger Plan
+                                (Infotafel)</label>
+                            <textarea id="setting-today-plan" placeholder="z.B. 14:00 - Sport&#10;15:00 - Snack"
+                                style="width:100%; height:80px; font-size:0.85rem; padding:8px; border-radius:10px; border:1px solid var(--glass-border); background:rgba(255,255,255,0.05); color:white; resize:vertical;"></textarea>
+                        </div>
+                        <div class="edit-field">
+                            <label style="font-size:0.75rem; color:var(--accent); font-weight:700;">Kommende Projekte
+                                (Infotafel)</label>
+                            <textarea id="setting-upcoming-projects" placeholder="z.B. Sommerfest planen 🎈"
+                                style="width:100%; height:60px; font-size:0.85rem; padding:8px; border-radius:10px; border:1px solid var(--glass-border); background:rgba(255,255,255,0.05); color:white; resize:vertical;"></textarea>
+                        </div>
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <div class="edit-field" style="flex:2">
+                                <label
+                                    style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">Gruppen-Belohnung
+                                    Titel (Spenden)</label>
+                                <input type="text" id="setting-group-title" placeholder="Filmtag" style="width:100%;">
+                            </div>
+                            <div class="edit-field" style="flex:1">
+                                <label style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">Ziel</label>
+                                <input type="number" id="setting-group-target" placeholder="8"
+                                    style="width:100%; text-align:center;">
+                            </div>
+                        </div>
+                        <div
+                            style="display:flex; gap:10px; align-items:center; background:rgba(255,215,0,0.05); border:1px solid rgba(255,215,0,0.2); border-radius:12px; padding:12px;">
                             <div style="font-size:1.5rem;">⭐</div>
                             <div style="flex:1">
-                                <label style="font-size:0.75rem; color:gold; font-weight:700; display:block; margin-bottom:6px;">SCHÜLER D. WOCHE DAUER</label>
-                                <input type="number" id="setting-vip-duration" placeholder="7" min="1" max="31" style="width:80px; text-align:center;">
-                                <span style="font-size:0.75rem; color:var(--text-muted); margin-left:8px;">Tage bis Abzeichen abläuft</span>
+                                <label
+                                    style="font-size:0.75rem; color:gold; font-weight:700; display:block; margin-bottom:6px;">VIP-DAUER
+                                    (TAGE)</label>
+                                <input type="number" id="setting-vip-duration" placeholder="3" min="1" max="30"
+                                    style="width:80px; text-align:center;">
+                                <span style="font-size:0.75rem; color:var(--text-muted); margin-left:8px;">Tage bis VIP
+                                    automatisch abläuft</span>
                             </div>
                         </div>
-                        <button onclick="saveSettings()" class="add-stamp-btn" style="padding:10px; font-size:0.9rem;">Einstellungen speichern</button>
+                        <!-- Audio Test -->
+                        <div class="edit-field" style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; margin-top: 5px;">
+                            <label style="font-size: 0.75rem; color: #60a5fa; font-weight: 700;">🔈 AUDIO TEST (INFOTAFEL)</label>
+                            <div style="display: flex; gap: 10px; margin-top: 5px;">
+                                <button onclick="testSound('zeit1')" class="icon-btn-small" style="flex: 1; padding: 8px; font-size: 0.7rem; border-color: #60a5fa44;">Test 15:30 (Audio)</button>
+                                <button onclick="testSound('zeit2')" class="icon-btn-small" style="flex: 1; padding: 8px; font-size: 0.7rem; border-color: #60a5fa44;">Test 16:30 (Audio)</button>
+                            </div>
+                            <p style="font-size: 0.65rem; color: var(--text-muted); margin-top: 5px;">Triggert den Sound live auf der Infotafel (Sound muss dort aktiviert sein).</p>
+                        </div>
+                        <button onclick="saveSettings()" class="add-stamp-btn"
+                            style="padding:10px; font-size:0.9rem;">Einstellungen speichern</button>
                     </div>
                 </div>
+                <!-- Badges verwalten (Moved from Sidebar top) -->
+                <div class="glass-card" style="border-color: #ec4899; margin-top: 15px;">
+                    <h3 style="color: #ec4899;">🏅 Abzeichen verwalten</h3>
+                    <div id="badge-list"
+                        style="display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; min-height: 30px;">
+                        <span style="color: var(--text-muted); font-size: 0.8rem;">Lade Abzeichen...</span>
+                    </div>
+                    <div
+                        style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--glass-border);">
+                        <p style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700;">Neues Abzeichen
+                            erstellen:</p>
+                        <div style="display: flex; gap: 8px;">
+                            <input type="text" id="new-badge-emoji" placeholder="🏅"
+                                style="width: 55px; text-align: center; font-size: 1.2rem;">
+                            <input type="text" id="new-badge-name" placeholder="Name des Abzeichens" style="flex: 1;">
+                        </div>
+                        <input type="text" id="new-badge-desc" placeholder="Beschreibung (optional)">
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <label style="font-size: 0.75rem; color: var(--text-muted);">Farbe:</label>
+                            <input type="color" id="new-badge-color" value="#f59e0b"
+                                style="width: 40px; height: 30px; border-radius: 6px; border: none; cursor: pointer; background: none;">
+                        </div>
+                        <button onclick="createBadge()" class="add-stamp-btn"
+                            style="background: #ec4899; padding: 8px; font-size: 0.85rem;">Abzeichen erstellen</button>
+                    </div>
+                    <p id="badge-status-msg" style="font-size: 0.8rem; margin-top: 8px; display: none;"></p>
+                </div>
 
-                <!-- Reward Management (Hidden) -->
-                <div class="glass-card" style="border-color: var(--accent); display:none;">
+                <!-- Reward Management -->
+                <div class="glass-card" style="border-color: var(--accent);">
                     <h3>⚙️ Belohnungen</h3>
-                    <div id="admin-reward-list" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 1.5rem;">
+                    <div id="admin-reward-list"
+                        style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 1.5rem;">
                         Lade...
                     </div>
+                    <h4 class="subtitle" style="margin-bottom: 8px;">Neu hinzufügen:</h4>
+                    <div style="display:flex; flex-direction:column; gap:8px;">
+                        <div style="display:flex; gap:8px;">
+                            <input type="number" id="new-reward-threshold" placeholder="Punkte" style="width: 80px;">
+                            <input type="text" id="new-reward-icon" placeholder="Icon" style="width: 60px;">
+                        </div>
+                        <input type="text" id="new-reward-title" placeholder="Titel">
+                        <input type="text" id="new-reward-desc" placeholder="Beschreibung">
+                        <button id="add-reward-btn" class="add-stamp-btn"
+                            style="background: var(--accent);">Hinzufügen</button>
+                    </div>
+                    <p id="reward-status-msg" style="font-size: 0.8rem; margin-top: 10px; display:none;"></p>
                 </div>
 
             </aside>
@@ -197,15 +358,43 @@
             <section class="main-content">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
                     <h2 style="font-size: 1.5rem;">Schüler-Übersicht</h2>
-                    <input type="text" id="search-students" placeholder="🔍 Namen suchen..." style="width: 250px; background: rgba(0,0,0,0.2);">
+                    <input type="text" id="search-students" placeholder="🔍 Namen suchen..."
+                        style="width: 250px; background: rgba(0,0,0,0.2);">
                 </div>
                 <div id="admin-student-list" class="student-grid">
                     <div class="glass-card" style="text-align:center">Lade Schüler-Daten...</div>
+                </div>
+
+                <!-- Logbook View (Hidden by default) -->
+                <div id="logbook-view" class="hidden">
+                    <div class="glass-card" style="text-align:center">Initialisiere Logbuch...</div>
+                </div>
+
+                <!-- Appointments View (Hidden by default) -->
+                <div id="appointments-view" class="hidden">
+                    <div class="glass-card" style="text-align:center">Initialisiere Termin-Planer...</div>
                 </div>
             </section>
         </div>
     </div>
 
-    <script src="admin.js?v=2"></script>
+    <!-- Global container for modals (accessible from all views) -->
+    <div id="global-modals-container"></div>
+
+    <script src="admin.js?v=3"></script>
+    <script src="logbook.js?v=1"></script>
+    <script src="appointments.js?v=1"></script>
+    <script>
+        function selectNewPickup(btn, time) {
+            const container = btn.parentElement;
+            container.querySelectorAll('.pickup-btn').forEach(b => {
+                const isActive = b === btn;
+                b.classList.toggle('active', isActive);
+                b.style.color = isActive ? 'white' : 'rgba(255,255,255,0.3)';
+            });
+            document.getElementById('new-student-pickup').value = time;
+        }
+    </script>
 </body>
+
 </html>

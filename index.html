@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NSMS NEUALM - Infotafel</title>
+    <title>NACHMI MS NEUALM - Next Level</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -29,19 +29,37 @@
         <!-- Home View -->
         <main id="view-home" class="view active">
             <header>
-                <div class="brand-tag">NSMS - NEUALM - NACHMI</div>
-                <h1>Infotafel</h1>
-                <p class="subtitle">Schüler-Information</p>
+                <div class="brand-tag">NACHMI MS-STADT</div>
+                <h1>Next Level</h1>
+                <p class="subtitle">Stempel-Challenge</p>
             </header>
             
             <div class="glass-card home-card">
                 <p style="margin-bottom:1.5rem; font-weight:500;">Gib dein Kürzel ein:</p>
                 <input type="text" id="student-id-input" placeholder="z.B. han" 
                     style="width:100%; font-size:1.5rem; padding:1rem; border-radius:16px; border:1px solid var(--glass-border); background:rgba(255,255,255,0.05); color:white; text-align:center; margin-bottom:1.5rem; text-transform: lowercase;">
-                <button class="add-stamp-btn" onclick="loginWithId()">Anmelden</button>
+                <button class="add-stamp-btn" onclick="loginWithId()">Challenge starten!</button>
                 
-                <div id="community-goal-container" style="display:none;"></div>
-                <div id="group-reward-home" style="display:none;"></div>
+                <div id="community-goal-container" style="margin-top:2rem; text-align:left;">
+                    <div style="display:flex; justify-content:space-between; font-size:0.8rem; font-weight:700; margin-bottom:8px;">
+                        <span id="community-title-label">🍕 Gruppen-Ziel: Pizza-Party!</span>
+                        <span id="community-total-text">0 / 500</span>
+                    </div>
+                    <div class="reward-progress-bg" style="height:12px; border-radius:6px;">
+                        <div id="community-progress-bar" class="reward-progress-bar" style="width: 0%; border-radius:6px; background:linear-gradient(90deg, var(--primary), var(--accent));"></div>
+                    </div>
+                </div>
+
+                <!-- NEW: Group Reward (Filmtag) Progress -->
+                <div id="group-reward-home" style="margin-top:1.5rem; text-align:left; display:none;">
+                    <div style="display:flex; justify-content:space-between; font-size:0.8rem; font-weight:700; margin-bottom:8px;">
+                        <span id="group-reward-title-home">🎬 Filmtag</span>
+                        <span id="group-reward-status-home" style="color:var(--accent);">0 / 8</span>
+                    </div>
+                    <div class="reward-progress-bg" style="height:10px; border-radius:5px;">
+                        <div id="group-reward-bar-home" class="reward-progress-bar" style="width: 0%; border-radius:5px; background:var(--accent);"></div>
+                    </div>
+                </div>
                 
                 <div style="margin-top:2.5rem; border-top:1px solid var(--glass-border); padding-top:1.5rem;">
                     <button class="icon-btn" onclick="openSupervisorPin()" style="width:100%; display:flex; align-items:center; justify-content:center; gap:10px;">
@@ -51,7 +69,9 @@
                 </div>
             </div>
 
-            <div class="rules-teaser" style="display:none;"></div>
+            <div class="rules-teaser" onclick="toggleRules()">
+                📜 Challenge-Regeln lesen
+            </div>
             
             <button class="icon-btn" onclick="openAdminPin()" style="position:fixed; bottom:20px; right:20px;">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.72V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.17a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -106,22 +126,59 @@
                     <div id="detail-avatar" class="avatar clickable" onclick="openAvatarPicker()">?</div>
                     <div>
                         <h2 id="detail-name" class="student-name">Schüler Name</h2>
-                        <div id="detail-attendance-info" style="margin-top:8px;">
-                            <div id="student-week-badge" class="hidden" style="background:var(--gold); color:black; padding:4px 10px; border-radius:8px; font-weight:900; font-size:0.8rem; display:inline-block; margin-bottom:8px;">🏆 Schüler d. Woche</div>
-                            <div style="font-size:0.85rem; color:var(--text-muted); font-weight:700;">🕒 Geht-Zeit: <span id="detail-departure" style="color:white;">--:--</span></div>
-                            <div style="font-size:0.85rem; color:var(--text-muted); font-weight:700; margin-top:4px;">📅 Tage: <span id="detail-days" style="color:white;">--</span></div>
-                        </div>
-                        <p id="detail-stamps-text" class="hidden">0 von 60 Stempel</p>
+                        <p id="detail-stamps-text" class="subtitle">0 von 60 Stempel</p>
                     </div>
                 </div>
 
-                <!-- Levels Grid Container (Hidden) -->
-                <div id="stamp-grid" class="hidden"></div>
-                <div id="carousel-dots" class="hidden"></div>
+                <!-- Levels Grid Container -->
+                <div id="stamp-grid" class="levels-container">
+                    <!-- 3 x 20 Grids will be injected here -->
+                </div>
+                <div id="carousel-dots" class="carousel-dots"></div>
 
-                <div id="group-reward-detail-container" class="hidden"></div>
+                <button id="add-stamp-button" class="add-stamp-btn hidden" onclick="openStampPin()">
+                    Neuer Stempel
+                </button>
 
-            <div class="reward-section hidden" style="display:none;"></div>
+                <!-- Group Donation Button -->
+                <button id="group-contribute-btn" class="add-stamp-btn hidden" onclick="contributeGroupReward()" 
+                    style="margin-top:10px; background:linear-gradient(135deg, var(--accent), #f59e0b); font-size:0.9rem; padding:0.8rem;">
+                    🎬 1 Stempel spenden
+                </button>
+                <div id="group-reward-detail-container" class="hidden" style="margin-top:15px;">
+                    <div style="display:flex; justify-content:space-between; font-size:0.75rem; font-weight:700; margin-bottom:5px;">
+                        <span id="group-reward-detail-label">🎬 Filmtag Stand</span>
+                        <span id="group-reward-detail-numbers">0 / 8</span>
+                    </div>
+                    <div class="reward-progress-bg" style="height:12px; border-radius:6px; background: rgba(255,255,255,0.15); border: 1px solid var(--glass-border);">
+                        <div id="group-reward-detail-bar" class="reward-progress-bar" style="width: 0%; border-radius:6px; background: linear-gradient(90deg, var(--accent), #f59e0b);"></div>
+                    </div>
+                </div>
+            </div> <!-- End of top main glass-card -->
+
+            <!-- KI Hort-Assistent (NEW) -->
+            <div id="ai-section" class="glass-card ai-card hidden">
+                <div id="ai-motivation-student" class="ai-content">
+                    Lade persönliche Nachricht... ✨
+                </div>
+            </div>
+
+
+            <div class="reward-section" style="margin-top: 2.5rem;">
+                <h3>🎁 Deine Belohnungen</h3>
+                <div id="reward-list" class="reward-list"></div>
+            </div>
+
+            <!-- Meine Abzeichen -->
+            <div id="badge-section" class="hidden" style="margin-top: 2rem;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+                    <h3 style="font-size:0.95rem; font-weight:800; letter-spacing:0.05em; color:white; margin:0;">🏅 Meine Abzeichen</h3>
+                    <button class="icon-btn-small" onclick="openBadgeInfo()" title="Alle Abzeichen ansehen" style="padding: 6px; width: 32px; height: 32px;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                    </button>
+                </div>
+                <div id="student-badge-list" style="display:flex; flex-direction:column; gap:10px;"></div>
+            </div>
 
             <div class="glass-card history-container" style="margin-top:2rem;">
                 <h3 style="font-size:0.8rem; margin-bottom:12px; color:var(--text-muted);">Letzte Aktivitäten</h3>
@@ -195,10 +252,21 @@
                 <button class="icon-btn" onclick="closeAvatarOverlay()" style="margin-top:20px; width:100%;">Abbrechen</button>
             </div>
         </div>
+
+        <!-- Badge Info Overlay -->
+        <div id="badge-info-overlay" class="overlay">
+            <div class="pin-container" style="width:95%; max-width:450px; padding: 1.5rem;">
+                <h3 style="margin-bottom:1.5rem;">Abzeichen Übersicht 🏅</h3>
+                <div id="all-badges-grid" style="display: flex; flex-direction: column; gap: 12px; text-align: left;">
+                    <!-- Dynamically filled by app.js -->
+                </div>
+                <button class="add-stamp-btn" onclick="closeBadgeInfoOverlay()" style="margin-top:20px; width:100%; background:rgba(255,255,255,0.1)">Schließen</button>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    <script src="app.js?v=3"></script>
+    <script src="app.js?v=final_fix_v6"></script>
 
 </body>
 </html>

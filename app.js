@@ -1,9 +1,9 @@
 const API_URL = "https://neualm-infotafel.sb-nmsstadt.workers.dev/api";
-const PIN_ADMIN = "8520"; 
-const PIN_STAMP = "1590"; 
-const PIN_SUPERVISOR = "1590"; 
+const PIN_ADMIN = "5400"; 
+const PIN_STAMP = "5400"; 
+const PIN_SUPERVISOR = "5400"; 
 
-const MAX_STAMPS = 60;
+const MAX_STAMPS = 9999;
 const STAMPS_PER_LEVEL = 20;
 
 const AVATARS = ["🦁", "🐯", "🦊", "🐭", "🐹", "🐰", "🐻", "🐼", "🐨", "🐸", "🐵", "🦄", "🐙", "🦋", "🦖"];
@@ -12,6 +12,7 @@ let selectedActivity = "Stempel";
 let selectedActivityEmoji = "🌟";
 let ACTIVITIES = [];
 let SETTINGS = {};
+var syncInterval = null;
 
 let REWARDS = [];
 let selectedStampCount = 1;
@@ -37,25 +38,53 @@ let enteredPin = "";
 let pinCallback = null;
 let isSupervisor = false;
 let isDirectLink = false;
-let syncInterval = null;
+let lastActivity = Date.now();
+window.addEventListener('mousedown', () => lastActivity = Date.now());
+window.addEventListener('touchstart', () => lastActivity = Date.now());
+window.addEventListener('keypress', () => lastActivity = Date.now());
 
 document.addEventListener('DOMContentLoaded', async () => {
-    await fetchRewards();
-    updateCommunityGoal();
-
     const urlParams = new URLSearchParams(window.location.search);
     const idParam = urlParams.get('id');
-    
-    if (idParam) {
-        isDirectLink = true;
-        loginWithId(idParam);
-    } else {
-        const savedId = localStorage.getItem('studentId');
-        if (savedId) {
-            loginWithId(savedId);
-        }
-    }
+    const savedId = localStorage.getItem('studentId');
+    const activeId = idParam || savedId;
+
+    if (idParam) isDirectLink = true;
+
+    // Combined initial load
+    await performInitialSync(activeId);
 });
+
+async function performInitialSync(id) {
+    try {
+        const url = id 
+            ? `${API_URL}/sync/startup?id=${encodeURIComponent(id)}` 
+            : `${API_URL}/sync/startup`;
+            
+        const response = await fetch(url);
+        if (response.ok) {
+            const data = await response.json();
+            
+            // 1. Shared Data
+            SETTINGS = data.settings || {};
+            REWARDS = (data.rewards || []).filter(r => r.active !== false).sort((a,b) => a.threshold - b.threshold);
+            
+            // 2. Student Data (if logged in)
+            if (data.student) {
+                currentStudent = data.student;
+                localStorage.setItem('studentId', currentStudent.id);
+                showDetail(currentStudent);
+            } else {
+                updateCommunityGoal(null, SETTINGS);
+            }
+        }
+    } catch (err) {
+        console.error("Initial sync error:", err);
+        // Fallback to legacy if something fails
+        await fetchRewards();
+        await updateCommunityGoal();
+    }
+}
 
 function toggleRules() {
     document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
@@ -65,43 +94,45 @@ function toggleRules() {
 function startSync() {
     stopSync();
     syncInterval = setInterval(() => {
-        if (document.visibilityState === 'visible' && currentStudent && !isSupervisor) {
+        const isIdle = (Date.now() - lastActivity > 180000); // 3 minutes idle
+        if (document.visibilityState === 'visible' && currentStudent && !isSupervisor && !isIdle) {
             silentSync();
         }
-    }, 5000);
+    }, 60000); // Poll every 60s instead of 30s
 }
 
 function stopSync() {
-    if (syncInterval) clearInterval(syncInterval);
+    if (typeof syncInterval !== 'undefined' && syncInterval) {
+        clearInterval(syncInterval);
+        syncInterval = null;
+    }
 }
 
 async function silentSync() {
     if (!currentStudent) return;
     try {
-        const [stRes, setRes] = await Promise.all([
-            fetch(`${API_URL}/students/${currentStudent.id}`),
-            fetch(`${API_URL}/settings`)
-        ]);
+        // Optimized: Single request for both student data and global settings
+        const response = await fetch(`${API_URL}/sync/student?id=${encodeURIComponent(currentStudent.id)}`);
 
-        if (stRes.ok && setRes.ok) {
-            const freshData = await stRes.json();
-            const freshSettings = await setRes.json();
+        if (response.ok) {
+            const data = await response.json();
+            const { student: freshData, settings: freshSettings } = data;
             
             // Check for changes in student data
-            const studentChanged = freshData.stamps !== currentStudent.stamps || 
-                                   freshData.usedStamps !== currentStudent.usedStamps ||
-                                   JSON.stringify(freshData.redemptions) !== JSON.stringify(currentStudent.redemptions);
+            const studentChanged = JSON.stringify(freshData) !== JSON.stringify(currentStudent);
             
-            // Check for changes in group reward activation
-            const settingsChanged = JSON.stringify(freshSettings.groupReward) !== JSON.stringify(SETTINGS.groupReward);
+            // Check for changes in settings (especially group reward or celebration)
+            const settingsChanged = JSON.stringify(freshSettings.groupReward) !== JSON.stringify(SETTINGS.groupReward) ||
+                                   JSON.stringify(freshSettings.celebration) !== JSON.stringify(SETTINGS.celebration);
 
             if (studentChanged || settingsChanged) {
                 currentStudent = freshData;
                 SETTINGS = freshSettings;
                 updateStampDisplay(currentStudent);
                 renderRewards(currentStudent);
+
                 // Also update home screen if needed (community goal)
-                updateCommunityGoal(); 
+                updateCommunityGoal(null, freshSettings); 
             }
 
             // Check for group celebration trigger
@@ -184,15 +215,12 @@ function renderStudentList() {
         const card = document.createElement('div');
         card.className = 'glass-card student-item';
         card.onclick = () => showDetail(s);
-        
-        const isVip = s.vip && s.vip.active;
-
         card.innerHTML = `
             <div class="student-info">
-                <div class="avatar" style="${isVip ? 'border: 2px solid var(--gold);' : ''}">${s.avatar || s.name.charAt(0)}</div>
-                <div class="student-name">${s.name} ${isVip ? '🏆' : ''}</div>
+                <div class="avatar">${s.avatar || s.name.charAt(0)}</div>
+                <div class="student-name">${s.name}</div>
             </div>
-            <div class="stamp-count" style="font-size:0.7rem; color:var(--accent); font-weight:800;">${(s.attendanceDays || []).join(', ')}</div>
+            <div class="stamp-count">${s.stamps} / ${MAX_STAMPS}</div>
         `;
         container.appendChild(card);
     });
@@ -205,19 +233,14 @@ function showDetail(student) {
     
     document.getElementById('detail-name').innerText = student.name;
     const avatar = student.avatar || student.name.charAt(0);
+    const streak = calculateStreak(student.history || []);
+    const streakHTML = streak > 1 ? `<span class="fire-icon">🔥 ${streak} Tage</span>` : '';
     
-    const isVip = (student.vip && student.vip.active);
-    const vipBadge = document.getElementById('student-week-badge');
-    if (vipBadge) {
-        if (isVip) vipBadge.classList.remove('hidden');
-        else vipBadge.classList.add('hidden');
-    }
-
-    document.getElementById('detail-name').innerText = student.name;
+    const vipBadge = (student.vip && student.vip.active) 
+        ? `<span class="vip-badge">⭐ VIP</span>` 
+        : '';
+    document.getElementById('detail-name').innerHTML = `${student.name} ${streakHTML} ${vipBadge}`;
     document.getElementById('detail-avatar').innerText = avatar;
-
-    document.getElementById('detail-departure').innerText = student.departureTime || '--:--';
-    document.getElementById('detail-days').innerText = (student.attendanceDays || []).join(', ') || 'Keine';
     
     const addBtn = document.getElementById('add-stamp-button');
     const logoutBtn = document.getElementById('logout-btn');
@@ -235,11 +258,51 @@ function showDetail(student) {
         startSync();
     }
 
-    updateStampDisplay(student);
-    renderRewards(student);
-    renderBadges(student);
-    renderHistory(student.history || []);
+        updateStampDisplay(student);
+        renderRewards(student);
+        renderBadges(student);
+        renderHistory(student.history || []);
+        
 
+    const aiSection = document.getElementById('ai-section');
+    const aiText = document.getElementById('ai-motivation-student');
+    if (aiSection && aiText) {
+        const cacheKey = `ai_motivation_${student.id}_${new Date().toISOString().split('T')[0]}`;
+        const cached = localStorage.getItem(cacheKey);
+
+        // NEW: Ignore cache if it contains the fallback message (fixed the "stuck" error)
+        if (cached && !cached.includes("kurze Pause")) {
+            console.log("Loading AI message from cache...");
+            aiSection.classList.remove('hidden');
+            aiText.innerText = cached;
+        } else {
+            console.log("Fetching new personal AI motivation for:", student.id);
+            aiSection.classList.remove('hidden');
+            aiText.innerText = "NACHMI überlegt sich gerade was ganz Besonderes für dich... ✨";
+            
+            // Fetch personal motivation on demand
+            fetch(`${API_URL}/ai/student-motivation?id=${encodeURIComponent(student.id)}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.text && !data.debugError) {
+                        console.log("AI message received!");
+                        aiText.innerText = data.text;
+                        localStorage.setItem(cacheKey, data.text);
+                    } else if (data.debugError) {
+                        // NEW: Show debug info if backend failed but returned JSON
+                        aiText.innerText = `NACHMI macht gerade eine kurze Pause. ✨ (Fehler: ${data.debugError})`;
+                        console.error("AI Debug Error:", data.debugError, data.debugDetails);
+                    } else {
+                        throw new Error("No text or error in AI response");
+                    }
+                })
+                .catch(err => {
+                    console.error("Personal AI error:", err);
+                    aiText.innerText = "NACHMI macht gerade eine kurze Pause. ✨ Sammle weiter Stempel!";
+                    // Do NOT add 'hidden' back if it already flashed, keep the card visible with fallback text
+                });
+        }
+    }
     // Birthday Surprise
     if (student.birthday) {
         const today = new Date();
@@ -254,6 +317,8 @@ function showDetail(student) {
             }
         }
     }
+
+
 }
 
 function renderRewards(student) {
@@ -276,33 +341,46 @@ function renderRewards(student) {
 
     // --- NEW: Group Reward Donation Button (Conditional) ---
     const donateBtn = document.getElementById('group-contribute-btn');
+    const isGroupActive = SETTINGS.groupReward && SETTINGS.groupReward.active;
+    const isFull = isGroupActive && (SETTINGS.groupReward.current >= SETTINGS.groupReward.target);
+
     if (donateBtn) {
-        const isGroupActive = SETTINGS.groupReward && SETTINGS.groupReward.active;
-        const isFull = isGroupActive && SETTINGS.groupReward.current >= SETTINGS.groupReward.target;
-        
-        if (!isSupervisor && isGroupActive && !isFull && freeStamps >= 1) {
+        if (!isSupervisor && isGroupActive) {
             donateBtn.classList.remove('hidden');
+            if (isFull) {
+                donateBtn.innerText = "🎬 Ziel erreicht!";
+                donateBtn.disabled = true;
+                donateBtn.style.opacity = "0.7";
+            } else if (freeStamps < 1) {
+                donateBtn.innerText = "🎬 1 Stempel spenden";
+                donateBtn.disabled = true;
+                donateBtn.style.opacity = "0.5";
+            } else {
+                donateBtn.innerText = "🎬 1 Stempel spenden";
+                donateBtn.disabled = false;
+                donateBtn.style.opacity = "1";
+            }
         } else {
             donateBtn.classList.add('hidden');
         }
+    }
         
-        // NEW: Live Status Bar in Detail View
-        const donateContainer = document.getElementById('group-reward-detail-container');
-        if (donateContainer) {
-            if (isGroupActive) {
-                donateContainer.classList.remove('hidden');
-                
-                const gTitle = SETTINGS.groupReward.title || 'Filmtag';
-                const gCurrent = SETTINGS.groupReward.current || 0;
-                const gTarget = SETTINGS.groupReward.target || 8;
-                const gPercent = Math.min(100, (gCurrent / gTarget) * 100);
+    // NEW: Live Status Bar in Detail View
+    const donateContainer = document.getElementById('group-reward-detail-container');
+    if (donateContainer) {
+        if (isGroupActive) {
+            donateContainer.classList.remove('hidden');
+            
+            const gTitle = SETTINGS.groupReward.title || 'Filmtag';
+            const gCurrent = SETTINGS.groupReward.current || 0;
+            const gTarget = SETTINGS.groupReward.target || 8;
+            const gPercent = Math.min(100, (gCurrent / gTarget) * 100);
 
-                document.getElementById('group-reward-detail-label').innerText = `🎬 ${gTitle} Stand`;
-                document.getElementById('group-reward-detail-numbers').innerText = `${gCurrent} / ${gTarget}`;
-                document.getElementById('group-reward-detail-bar').style.width = `${gPercent}%`;
-            } else {
-                donateContainer.classList.add('hidden');
-            }
+            document.getElementById('group-reward-detail-label').innerText = `🎬 ${gTitle} Stand`;
+            document.getElementById('group-reward-detail-numbers').innerText = `${gCurrent} / ${gTarget}`;
+            document.getElementById('group-reward-detail-bar').style.width = `${gPercent}%`;
+        } else {
+            donateContainer.classList.add('hidden');
         }
     }
     // ------------------------------------------
@@ -405,11 +483,13 @@ function updateStampDisplay(student) {
     }
     const maxCompletedRedemption = usedStamps;
 
-    // Create 3 levels
+    // Create levels dynamically
     const dotsContainer = document.getElementById('carousel-dots');
     dotsContainer.innerHTML = '';
 
-    for (let l = 1; l <= 3; l++) {
+    const numLevels = Math.max(3, Math.floor(student.stamps / STAMPS_PER_LEVEL) + 1);
+
+    for (let l = 1; l <= numLevels; l++) {
         const levelContainer = document.createElement('div');
         levelContainer.className = 'level-group';
         levelContainer.dataset.level = l;
@@ -465,10 +545,10 @@ function updateStampDisplay(student) {
     };
 
     // Auto-scroll to current level
-    const currentLevel = Math.min(3, Math.floor(student.stamps / STAMPS_PER_LEVEL) + 1);
+    const currentLevel = Math.floor(student.stamps / STAMPS_PER_LEVEL) + 1;
     
     // Glitter Explosion (Confetti) Logic
-    const milestones = [20, 40, 60];
+    const milestones = [20, 40, 60, 80, 100, 120, 140, 160, 180, 200];
     milestones.forEach(m => {
         if (student.stamps >= m) {
             const key = `confetti_${student.id}_${m}`;
@@ -491,28 +571,6 @@ function updateStampDisplay(student) {
     }, 100);
 }
 
-function fireConfetti() {
-    const duration = 3 * 1000;
-    const animationEnd = Date.now() + duration;
-    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
-
-    function randomInRange(min, max) {
-      return Math.random() * (max - min) + min;
-    }
-
-    const interval = setInterval(function() {
-      const timeLeft = animationEnd - Date.now();
-
-      if (timeLeft <= 0) {
-        return clearInterval(interval);
-      }
-
-      const particleCount = 50 * (timeLeft / duration);
-      // since particles fall down, start a bit higher than random
-      confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } }));
-      confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } }));
-    }, 250);
-}
 
 // PIN Overlay
 function openPinOverlay(callback, title = "PIN") {
@@ -603,44 +661,45 @@ function validatePin() {
 
 async function addStamp(count = 1) {
     if (!currentStudent) return;
-    const finalCount = Math.min(MAX_STAMPS, currentStudent.stamps + count);
-    if (currentStudent.stamps < MAX_STAMPS) {
-        const newCount = finalCount;
-        try {
-            const response = await fetch(`${API_URL}/students/${currentStudent.id}`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    stamps: newCount,
-                    reason: selectedActivity 
-                })
-            });
-            if (response.ok) {
-                currentStudent = await response.json();
-                updateStampDisplay(currentStudent);
-                renderRewards(currentStudent);
-                renderHistory(currentStudent.history || []);
-                
-                // Reset activity for next time
-                selectedActivity = "Stempel";
-                selectedActivityEmoji = "🌟";
-                
-                // Close any remaining overlays (like activity or pin)
-                closeActivityOverlay();
-                closePinOverlay();
-            }
-        } catch (err) {
-            alert("Fehler beim Speichern.");
+    const newCount = currentStudent.stamps + count;
+    try {
+        const response = await fetch(`${API_URL}/students/${currentStudent.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                stamps: newCount,
+                reason: selectedActivity 
+            })
+        });
+        if (response.ok) {
+            currentStudent = await response.json();
+            updateStampDisplay(currentStudent);
+            renderRewards(currentStudent);
+            renderHistory(currentStudent.history || []);
+            
+            // Reset activity for next time
+            selectedActivity = "Stempel";
+            selectedActivityEmoji = "🌟";
+            
+            // Close any remaining overlays (like activity or pin)
+            closeActivityOverlay();
+            closePinOverlay();
         }
+    } catch (err) {
+        alert("Fehler beim Speichern.");
     }
 }
 // Community Goal
 async function updateCommunityGoal(providedStudents = null, providedSettings = null) {
     try {
         let allStudents = providedStudents;
-        let settings = providedSettings;
+        let settings = providedSettings || SETTINGS;
 
-        if (!allStudents || !settings) {
+        // Use the optimized total from settings if available
+        const hasOptimizedTotal = settings && settings.communityTotal !== undefined;
+
+        if (!hasOptimizedTotal && !allStudents) {
+            // Only fallback to full list fetch if we don't have the optimized total
             const [stRes, setRes] = await Promise.all([
                 fetch(`${API_URL}/students`),
                 fetch(`${API_URL}/settings`)
@@ -652,7 +711,7 @@ async function updateCommunityGoal(providedStudents = null, providedSettings = n
             }
         }
         
-        if (allStudents && settings) {
+        if (settings) {
             // 1. Community Goal
             const cGoalContainer = document.getElementById('community-goal-container');
             if (cGoalContainer) {
@@ -662,7 +721,12 @@ async function updateCommunityGoal(providedStudents = null, providedSettings = n
                     cGoalContainer.style.display = 'block';
                     const target = settings.communityTarget || 500;
                     const title = settings.communityTitle || "Pizza-Party";
-                    const total = allStudents.reduce((sum, s) => sum + (s.stamps || 0), 0);
+                    
+                    // Use optimized total or calculate from list
+                    const total = hasOptimizedTotal 
+                        ? settings.communityTotal 
+                        : (allStudents ? allStudents.reduce((sum, s) => sum + (s.stamps || 0), 0) : 0);
+                        
                     const progress = Math.min(100, (total / target) * 100);
                     
                     document.getElementById('community-title-label').innerText = `🌍 ${title}`;
@@ -747,7 +811,7 @@ function calculateStreak(history) {
     
     // Check if last stamp was today or yesterday
     const lastDate = dates[dates.length - 1];
-    const diffToToday = (parse(todayStr).getTime() - parse(lastDate).getTime()) / (1000 * 60 * 60 * 24);
+    const diffToToday = (parse(todayStr) - parse(lastDate)) / (1000 * 60 * 60 * 24);
     
     if (diffToToday > 1) return 0; // Streak broken
 
@@ -755,7 +819,7 @@ function calculateStreak(history) {
     let checkDate = parse(lastDate);
     for (let i = dates.length - 1; i >= 0; i--) {
         const d = parse(dates[i]);
-        const diff = (checkDate.getTime() - d.getTime()) / (1000 * 60 * 60 * 24);
+        const diff = (checkDate - d) / (1000 * 60 * 60 * 24);
         
         if (diff === 0) {
             streak++;
@@ -814,35 +878,59 @@ async function selectAvatar(emoji) {
     }
 }
 
-function renderBadges(student) {
-    const container = document.getElementById('badge-container');
-    if (!container) return;
-    container.innerHTML = '';
-    
-    // Auto-calculate badges based on current state
-    const badges = [];
-    if (student.stamps > 0) badges.push("Erster Stempel! ✨");
-    if (student.stamps >= 10) badges.push("Stempel-Held ⭐");
-    if (student.stamps >= 20) badges.push("Profi-Karte 🔓");
-    if (student.stamps >= 40) badges.push("Legenden-Status 👑");
-    
-    const streak = calculateStreak(student.history || []);
-    if (streak >= 3) badges.push("Streak-Meister 🔥");
-    if (streak >= 5) badges.push("Nicht zu stoppen! ⚡");
+async function renderBadges(student) {
+    const section = document.getElementById('badge-section');
+    const list = document.getElementById('student-badge-list');
+    if (!section || !list) return;
 
-    // Add manual badges from student data if any
-    if (student.badges && Array.isArray(student.badges)) {
-        student.badges.forEach(b => {
-            if (!badges.includes(b)) badges.push(b);
-        });
+    const studentBadgeIds = student.badges || [];
+    if (studentBadgeIds.length === 0) {
+        section.classList.add('hidden');
+        return;
     }
 
-    badges.forEach(b => {
-        const span = document.createElement('span');
-        span.className = 'badge-tag';
-        span.innerText = b;
-        container.appendChild(span);
-    });
+    // Fetch badge definitions
+    let allBadges = [];
+    try {
+        const res = await fetch(`${API_URL}/badges`);
+        if (res.ok) allBadges = await res.json();
+    } catch (e) { /* silently skip */ }
+
+    const earned = allBadges.filter(b => studentBadgeIds.includes(b.id));
+    if (earned.length === 0) {
+        section.classList.add('hidden');
+        return;
+    }
+
+    section.classList.remove('hidden');
+    list.innerHTML = earned.map(b => `
+        <div style="
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 12px 16px;
+            background: ${b.color}15;
+            border: 1px solid ${b.color}55;
+            border-radius: 14px;
+            animation: fadeIn 0.4s ease-out both;
+        ">
+            <div style="
+                font-size: 2rem;
+                width: 48px;
+                height: 48px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: ${b.color}25;
+                border-radius: 12px;
+                flex-shrink: 0;
+            ">${b.emoji}</div>
+            <div>
+                <div style="font-weight: 900; font-size: 1rem; color: ${b.color};">${b.name}</div>
+                ${b.description ? `<div style="font-size: 0.78rem; color: rgba(255,255,255,0.6); margin-top: 2px;">${b.description}</div>` : ''}
+            </div>
+        </div>
+    `).join('');
 }
 
 function renderHistory(history) {
@@ -904,9 +992,14 @@ function renderActivityPicker() {
     
     ACTIVITIES.forEach(act => {
         const item = document.createElement('div');
-        item.className = 'avatar-item';
+        item.className = 'activity-btn';
+        if (selectedActivity === act.label) item.classList.add('active');
+        
         item.onclick = (e) => selectActivity(act.label, act.emoji, e);
-        item.innerHTML = `${act.emoji}<br><span style="font-size:0.6rem">${act.label}</span>`;
+        item.innerHTML = `
+            <span class="activity-emoji">${act.emoji}</span>
+            <span class="activity-label">${act.label}</span>
+        `;
         list.appendChild(item);
     });
 }
@@ -920,9 +1013,9 @@ function selectActivity(reason, emoji, event) {
     selectedActivityEmoji = emoji;
     
     // Visual feedback
-    document.querySelectorAll('#activity-list .avatar-item').forEach(el => el.style.borderColor = 'transparent');
+    document.querySelectorAll('#activity-list .activity-btn').forEach(el => el.classList.remove('active'));
     if (event && event.currentTarget) {
-        event.currentTarget.style.borderColor = 'var(--primary-light)';
+        event.currentTarget.classList.add('active');
     }
 }
 
@@ -930,7 +1023,7 @@ function confirmActivity() {
     const custom = document.getElementById('custom-activity').value.trim();
     if (custom) {
         selectedActivity = custom;
-        selectedActivityEmoji = "🌟";
+        selectedActivityEmoji = "📝"; // Neutral icon instead of star
     }
     // Don't close overlay here, let openStampPin with skipOverlay handle the flow
     openStampPin(true);
@@ -970,3 +1063,55 @@ async function contributeGroupReward() {
         alert("Fehler bei der Verbindung.");
     }
 }
+
+// Badge Info Modal
+async function openBadgeInfo() {
+    const overlay = document.getElementById('badge-info-overlay');
+    const grid = document.getElementById('all-badges-grid');
+    if (!overlay || !grid) return;
+
+    grid.innerHTML = '<div style="text-align:center; padding: 20px; opacity:0.6;">Suche Abzeichen... ✨</div>';
+    overlay.classList.add('active');
+
+    try {
+        const res = await fetch(`${API_URL}/badges`);
+        if (!res.ok) throw new Error("Fetch failed");
+        const allBadges = await res.json();
+        
+        const studentBadgeIds = currentStudent ? (currentStudent.badges || []) : [];
+        
+        grid.innerHTML = allBadges.map(b => {
+            const isEarned = studentBadgeIds.includes(b.id);
+            return `
+                <div class="badge-info-item ${isEarned ? 'earned' : 'locked'}">
+                    <div class="badge-info-icon" style="background: ${b.color}${isEarned ? '20' : '05'}">
+                        ${b.emoji}
+                    </div>
+                    <div class="badge-info-content">
+                        <h4 style="color: ${isEarned ? (b.color || 'white') : 'rgba(255,255,255,0.7)'}">${b.name}</h4>
+                        <p>${b.description || 'Sammle weiter Stempel!'}</p>
+                    </div>
+                    <div class="badge-status-tag ${isEarned ? 'earned' : 'locked'}">
+                        ${isEarned ? '✅ Erreicht' : '🔒 Noch offen'}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    } catch (e) {
+        console.error("Badge Load Error:", e);
+        grid.innerHTML = '<div style="text-align:center; padding: 20px; color: #ef4444;">Abzeichen konnten nicht geladen werden.</div>';
+    }
+}
+
+function closeBadgeInfoOverlay() {
+    document.getElementById('badge-info-overlay').classList.remove('active');
+}
+
+
+
+
+// Custom function for the Tamagotchi "Reminder" Popup
+
+
+let handwashInterval = null;
+

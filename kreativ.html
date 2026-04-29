@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kreative Projekte (AI Lab) - Nachmittagsbetreuung</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Using both base and admin styles to maintain consistent look -->
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="admin/admin.css">
+    <style>
+        .ai-form-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 2rem;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            margin-bottom: 2rem;
+        }
+
+        .ai-result-card {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--glass-border);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+
+        .ai-result-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 0.5rem;
+        }
+
+        .ai-result-desc {
+            font-size: 0.95rem;
+            line-height: 1.5;
+            color: #ddd;
+            margin-bottom: 1rem;
+        }
+
+        .ai-material-list, .ai-instruction-list {
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .ai-action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--primary-light);
+            color: var(--primary-light);
+            padding: 8px 16px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.85rem;
+        }
+
+        .btn-outline:hover {
+            background: rgba(147, 197, 253, 0.1);
+        }
+
+        .btn-outline-accent {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .btn-outline-accent:hover {
+            background: rgba(255, 107, 107, 0.1);
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Login Overlay for Admin PIN -->
+    <div id="login-overlay" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); align-items: center; justify-content: center; z-index: 2000;">
+        <div class="glass-card" style="max-width: 400px; padding: 2rem; text-align: center;">
+            <h2>Admin Login</h2>
+            <p style="color: var(--text-muted); margin-bottom: 1.5rem; font-size: 0.9rem;">Bitte Admin PIN eingeben</p>
+            <input type="password" id="admin-pin-input" maxlength="4" placeholder="••••" autofocus onkeydown="if(event.key==='Enter') verifyAdminPin()" 
+                style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.2); color: white; margin-bottom: 1rem; text-align: center; font-size: 1.5rem; letter-spacing: 0.5rem;">
+            <button class="add-stamp-btn" onclick="verifyAdminPin()" style="width: 100%;">Einloggen</button>
+            <button onclick="window.location.href='admin/index.html'" style="margin-top: 10px; width: 100%; background: transparent; border: 1px solid var(--glass-border); padding: 12px; border-radius: 12px; color: white; cursor: pointer;">Zurück zum Admin Dashboard</button>
+        </div>
+    </div>
+    
+    <div id="app-container" style="display: none; max-width: 1000px; margin: 0 auto; padding: 20px;">
+        <header style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 20px;">
+            <div class="admin-title-area">
+                <div class="brand-tag">AI CONTENT LAB</div>
+                <h1 style="font-size: 2rem; margin-bottom: 0.5rem;">Kreative Projekte</h1>
+                <p class="subtitle" style="margin: 0;">Magische Content-Generierung für die Nachmittagsbetreuung</p>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn-outline" onclick="window.location.href='planer.html'" style="margin: 0; color: #38bdf8; border-color: #38bdf8;">
+                    📅 Zum Content-Kalender
+                </button>
+                <button class="back-btn" onclick="window.location.href='admin/index.html'" style="margin: 0;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                    Admin Dashboard
+                </button>
+            </div>
+        </header>
+
+        <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 2rem;">
+            
+            <!-- Left Column: Generator Form -->
+            <aside>
+                <div class="ai-form-card">
+                    <h3 style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 10px;">
+                        <span>✨</span> Neues Projekt Planen
+                    </h3>
+
+                    <div class="edit-field" style="margin-bottom: 1.2rem;">
+                        <label style="font-size:0.8rem; color:var(--text-muted); font-weight:700;">Thema / Idee</label>
+                        <input type="text" id="prompt-thema" placeholder="z.B. Osterbasteln, Indoor Olympiade..." style="width:100%; padding: 10px; border-radius: 10px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.2); color: white;">
+                    </div>
+
+                    <div class="edit-field" style="margin-bottom: 1.2rem;">
+                        <label style="font-size:0.8rem; color:var(--text-muted); font-weight:700;">Altersgruppe</label>
+                        <select id="prompt-alter" style="width:100%; padding: 10px; border-radius: 10px; border: 1px solid var(--glass-border); background: #1a1b26; color: white;">
+                            <option value="Alle (10-14 Jahre)">Alle (10-14 Jahre)</option>
+                            <option value="Jüngere (10-12 Jahre)">Jüngere (10-12 Jahre)</option>
+                            <option value="Ältere (12-14 Jahre)">Ältere (12-14 Jahre)</option>
+                        </select>
+                    </div>
+
+                    <div class="edit-field" style="margin-bottom: 1.2rem;">
+                        <label style="font-size:0.8rem; color:var(--text-muted); font-weight:700;">Dauer (in Minuten)</label>
+                        <input type="number" id="prompt-dauer" value="45" min="15" max="180" step="15" style="width:100%; padding: 10px; border-radius: 10px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.2); color: white;">
+                    </div>
+
+                    <div class="edit-field" style="margin-bottom: 1.5rem;">
+                        <label style="font-size:0.8rem; color:var(--text-muted); font-weight:700;">Besondere Vorgaben (Optional)</label>
+                        <textarea id="prompt-extra" placeholder="z.B. Nur Papier und Schere verfügbar, keine lauten Spiele..." style="width:100%; height:80px; font-size:0.85rem; padding:10px; border-radius:10px; border:1px solid var(--glass-border); background:rgba(0,0,0,0.2); color:white; resize:vertical;"></textarea>
+                    </div>
+
+                    <button id="generate-btn" class="add-stamp-btn" onclick="generateIdeas()" style="width:100%; padding: 15px; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                        <span>🚀</span> Ideen Generieren
+                    </button>
+                    
+                    <div id="loading-indicator" style="display: none; text-align: center; margin-top: 15px;">
+                        <div class="loading-spinner"></div>
+                        <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 10px;">KI überlegt...</p>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Right Column: Results -->
+            <section>
+                <div id="results-container">
+                    <div class="glass-card" style="text-align: center; padding: 4rem 2rem; color: var(--text-muted);">
+                        <div style="font-size: 3rem; margin-bottom: 1rem;">💡</div>
+                        <h3>Noch keine Ideen generiert</h3>
+                        <p style="font-size: 0.9rem; margin-top: 10px;">Fülle das Formular links aus, um kreative Projektvorschläge für die Nachmittagsbetreuung zu erhalten.</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" style="position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%); background: var(--success); color: white; padding: 12px 24px; border-radius: 50px; font-weight: 600; font-size: 0.9rem; transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55); z-index: 3000; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+        Aktion erfolgreich!
+    </div>
+
+    <script src="kreativ.js?v=1"></script>
+</body>
+</html>
