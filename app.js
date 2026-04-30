@@ -35,6 +35,7 @@ async function fetchRewards() {
 let students = [];
 let currentStudent = null;
 let enteredPin = "";
+let currentPinLimit = 4;
 let pinCallback = null;
 let isSupervisor = false;
 let isDirectLink = false;
@@ -605,11 +606,13 @@ function updateStampDisplay(student) {
 
 
 // PIN Overlay
-function openPinOverlay(callback, title = "PIN") {
-    document.getElementById('pin-overlay').classList.add('active');
+function openPinOverlay(callback, title = "PIN", limit = 4) {
+    const overlay = document.getElementById('pin-overlay');
+    overlay.classList.add('active');
     document.querySelector('#pin-overlay h3').innerText = title;
     enteredPin = "";
     pinCallback = callback;
+    currentPinLimit = limit;
     updatePinDisplay();
 }
 
@@ -643,7 +646,7 @@ function openAdminPin() {
             console.error("Verifizierungsfehler:", err);
             return false;
         }
-    }, "Admin-PIN");
+    }, "Admin-PIN", 10); // Allow up to 10 chars for admin pin via keypad
 }
 
 function openStampPin(skipOverlay = false) {
@@ -673,10 +676,10 @@ function closePinOverlay() {
 }
 
 function addPin(num) {
-    if (enteredPin.length < 4) {
+    if (enteredPin.length < currentPinLimit) {
         enteredPin += num;
         updatePinDisplay();
-        if (enteredPin.length === 4) {
+        if (enteredPin.length === currentPinLimit) {
             setTimeout(validatePin, 200);
         }
     }
@@ -702,6 +705,22 @@ async function validatePin() {
         clearPin();
     }
 }
+// Keyboard Support for PIN Overlay
+window.addEventListener('keydown', (e) => {
+    const overlay = document.getElementById('pin-overlay');
+    if (!overlay || !overlay.classList.contains('active')) return;
+
+    if (e.key >= '0' && e.key <= '9') {
+        addPin(e.key);
+    } else if (e.key === 'Backspace') {
+        enteredPin = enteredPin.slice(0, -1);
+        updatePinDisplay();
+    } else if (e.key === 'Enter' && enteredPin.length > 0) {
+        validatePin();
+    } else if (e.key === 'Escape') {
+        closePinOverlay();
+    }
+});
 
 async function addStamp(count = 1) {
     if (!currentStudent) return;

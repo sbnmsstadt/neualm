@@ -19,7 +19,13 @@ function checkAuth() {
     } else {
         if (loginOverlay) loginOverlay.style.display = 'flex';
         if (adminApp) adminApp.style.display = 'none';
-        document.getElementById('admin-pin-input')?.focus();
+        
+        // Ensure input is cleared and focused for keyboard input
+        const pinInput = document.getElementById('admin-pin-input');
+        if (pinInput) {
+            pinInput.value = "";
+            setTimeout(() => pinInput.focus(), 100);
+        }
     }
 }
 
