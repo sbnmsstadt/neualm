@@ -625,12 +625,24 @@ function openSupervisorPin() {
 }
 
 function openAdminPin() {
-    openPinOverlay((pin) => {
-        if (pin === PIN_ADMIN) {
-            window.location.href = 'admin/index.html';
-            return true;
+    openPinOverlay(async (password) => {
+        try {
+            const res = await fetch(`${API_URL}/admin/verify`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password })
+            });
+            const data = await res.json();
+            if (data.success) {
+                sessionStorage.setItem('admin_auth', 'authorized');
+                window.location.href = 'admin/index.html';
+                return true;
+            }
+            return false;
+        } catch (err) {
+            console.error("Verifizierungsfehler:", err);
+            return false;
         }
-        return false;
     }, "Admin-PIN");
 }
 
@@ -680,9 +692,9 @@ function updatePinDisplay() {
     display.innerText = "•".repeat(enteredPin.length);
 }
 
-function validatePin() {
+async function validatePin() {
     if (typeof pinCallback !== 'function') return;
-    const success = pinCallback(enteredPin);
+    const success = await pinCallback(enteredPin);
     if (success) {
         closePinOverlay();
     } else {

@@ -9,12 +9,13 @@ let lastLoadedValues = {};  // Cache to track what was last put into DOM
 const adminApp = document.getElementById('admin-app');
 const loginOverlay = document.getElementById('login-overlay');
 
-// Simple PIN protection for Admin Dashboard
+// Simple protection for Admin Dashboard
 function checkAuth() {
-    if (sessionStorage.getItem('admin_auth') === PIN_ADMIN) {
+    // Use a generic 'authorized' flag instead of the plaintext PIN
+    if (sessionStorage.getItem('admin_auth') === 'authorized') {
         if (loginOverlay) loginOverlay.style.display = 'none';
         if (adminApp) adminApp.style.display = 'block';
-        loadSettings(); // Load settings once authorized
+        loadSettings(); 
     } else {
         if (loginOverlay) loginOverlay.style.display = 'flex';
         if (adminApp) adminApp.style.display = 'none';
@@ -22,15 +23,28 @@ function checkAuth() {
     }
 }
 
-function verifyAdminPin() {
+async function verifyAdminPin() {
     const input = document.getElementById('admin-pin-input');
-    if (input.value === PIN_ADMIN) {
-        sessionStorage.setItem('admin_auth', PIN_ADMIN);
-        checkAuth();
-    } else {
-        alert("Falscher PIN!");
-        input.value = "";
-        input.focus();
+    const password = input.value;
+    
+    try {
+        const res = await fetch(`${API_URL}/admin/verify`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password })
+        });
+        
+        const data = await res.json();
+        if (data.success) {
+            sessionStorage.setItem('admin_auth', 'authorized');
+            checkAuth();
+        } else {
+            alert("Falscher PIN!");
+            input.value = "";
+            input.focus();
+        }
+    } catch (err) {
+        alert("Fehler bei der Verifizierung.");
     }
 }
 
