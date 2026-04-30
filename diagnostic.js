@@ -1,6 +1,6 @@
 
 async function verify() {
-    const API_URL = "https://neualm-infotafel.sb-nmsstadt.workers.dev/api";
+    const API_URL = "https://neualm-infotafel.f-klavun.workers.dev/api";
     try {
         const res = await fetch(`${API_URL}/ai/day-summary/list`);
         const data = await res.json();

@@ -156,29 +156,6 @@ export default {
             return new Response("pong", { headers: corsHeaders });
         }
 
-        // --- Admin Verification ---
-        if (path === "/api/admin/verify" && method === "POST") {
-            try {
-                const { password } = await request.json();
-                const correctPw = env.ADMIN_PW || "8520";
-                if (String(password) === String(correctPw)) {
-                    return new Response(JSON.stringify({ success: true }), {
-                        headers: { ...corsHeaders, "Content-Type": "application/json" }
-                    });
-                } else {
-                    return new Response(JSON.stringify({ success: false }), {
-                        status: 401,
-                        headers: { ...corsHeaders, "Content-Type": "application/json" }
-                    });
-                }
-            } catch (e) {
-                return new Response(JSON.stringify({ success: false, error: "Invalid request" }), {
-                    status: 400,
-                    headers: { ...corsHeaders, "Content-Type": "application/json" }
-                });
-            }
-        }
-
         // --- Appointments ---
         if (path === "/api/appointments" && method === "GET") {
             const eventsRaw = await getKV("events");

@@ -1,4 +1,4 @@
-const API_URL = "https://neualm-infotafel.sb-nmsstadt.workers.dev/api";
+const API_URL = "https://neualm-infotafel.f-klavun.workers.dev/api";
 const PIN_ADMIN = "8520";
 window.students = [];
 let REWARDS = [];
