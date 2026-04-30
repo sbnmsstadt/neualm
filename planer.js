@@ -1,4 +1,4 @@
-const API_URL = "https://stempelkarte.sb-nmsstadt.workers.dev/api";
+const API_URL = "https://neualm-infotafel.sb-nmsstadt.workers.dev/api";
 const PIN_ADMIN = "8520"; 
 
 // --- Auth & Setup ---

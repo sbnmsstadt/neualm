@@ -16,7 +16,7 @@ const Appointments = {
 
     async checkApiConnection() {
         try {
-            const url = (typeof API_URL !== 'undefined') ? API_URL : "https://stempelkarte.sb-nmsstadt.workers.dev/api";
+            const url = (typeof API_URL !== 'undefined') ? API_URL : "https://neualm-infotafel.sb-nmsstadt.workers.dev/api";
             console.log("Testing Connection to:", `${url}/ping`);
             const res = await fetch(`${url}/ping`);
             if (res.ok) {
@@ -94,7 +94,7 @@ const Appointments = {
     },
 
     async fetchEvents() {
-        const url = (typeof API_URL !== 'undefined') ? API_URL : "https://stempelkarte.sb-nmsstadt.workers.dev/api";
+        const url = (typeof API_URL !== 'undefined') ? API_URL : "https://neualm-infotafel.sb-nmsstadt.workers.dev/api";
         try {
             const res = await fetch(`${url}/appointments`);
             if (res.ok) {
@@ -161,7 +161,7 @@ const Appointments = {
         btn.disabled = true;
         btn.innerText = "Speichere...";
 
-        const url = (typeof API_URL !== 'undefined') ? API_URL : "https://stempelkarte.sb-nmsstadt.workers.dev/api";
+        const url = (typeof API_URL !== 'undefined') ? API_URL : "https://neualm-infotafel.sb-nmsstadt.workers.dev/api";
 
         try {
             const res = await fetch(`${url}/appointments`, {
@@ -207,7 +207,7 @@ const Appointments = {
     async deleteEntry(id) {
         if (!confirm("Termin wirklich löschen?")) return;
 
-        const url = (typeof API_URL !== 'undefined') ? API_URL : "https://stempelkarte.sb-nmsstadt.workers.dev/api";
+        const url = (typeof API_URL !== 'undefined') ? API_URL : "https://neualm-infotafel.sb-nmsstadt.workers.dev/api";
 
         try {
             const res = await fetch(`${url}/appointments/${id}`, {
