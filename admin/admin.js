@@ -178,8 +178,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // ── TAMAGOTCHI TOGGLE LISTENER ──
-    document.getElementById('setting-tama-ignore-freeze')?.addEventListener('change', saveSettings);
+
 });
 
 async function fetchRewards() {
@@ -230,180 +229,7 @@ async function clearStudentOfWeek() {
     } catch (err) { }
 }
 
-// ── TAMAGOTCHI ADMIN ─────────────────────────────
-function updateTamagotchiAdmin(tama) {
-    if (!tama) return;
-    const statusEl = document.getElementById('tama-admin-status');
-    const hatchControls = document.getElementById('tama-hatch-controls');
-    const activeControls = document.getElementById('tama-active-controls');
 
-    if (tama.status === "egg") {
-        if (statusEl) statusEl.innerHTML = "Ei 🥚";
-        if (hatchControls) hatchControls.classList.remove('hidden');
-        if (activeControls) activeControls.classList.add('hidden');
-    } else {
-        const stageLabel = tama.stage || "Baby";
-        if (statusEl) statusEl.innerHTML = `${tama.name} 🐣 (${stageLabel})`;
-        if (hatchControls) hatchControls.classList.add('hidden');
-        if (activeControls) activeControls.classList.remove('hidden');
-        
-        const hunger = document.getElementById('tama-admin-hunger');
-        const thirst = document.getElementById('tama-admin-thirst');
-        const hygiene = document.getElementById('tama-admin-hygiene');
-        const love = document.getElementById('tama-admin-love');
-        const fun = document.getElementById('tama-admin-fun');
-
-        if (hunger) hunger.innerText = `${Math.round(tama.stats.hunger || 0)}%`;
-        if (thirst) thirst.innerText = `${Math.round(tama.stats.thirst || 0)}%`;
-        if (hygiene) hygiene.innerText = `${Math.round(tama.stats.hygiene || 0)}%`;
-        if (love) love.innerText = `${Math.round(tama.stats.love || 0)}%`;
-        if (fun) fun.innerText = `${Math.round(tama.stats.fun || 0)}%`;
-    }
-}
-
-async function hatchTamagotchi() {
-    const nameInput = document.getElementById('tama-new-name');
-    const name = nameInput ? nameInput.value : "Pixelino";
-    try {
-        const res = await fetch(`${API_URL}/tamagotchi/hatch`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name })
-        });
-        if (res.ok) {
-            alert(`${name} ist geschlüpft! 🎉`);
-            loadSettings();
-        }
-    } catch (err) { alert("Fehler beim Schlüpfen."); }
-}
-
-async function resetTamagotchi() {
-    if (!confirm("Tierchen wirklich zurücksetzen? Alle Fortschritte gehen verloren.")) return;
-    
-    // We update settings manually to reset
-    const newSettings = { ...currentSettings };
-    newSettings.tamagotchi = {
-        status: "egg",
-        name: "Pixelino",
-        hatchDate: null,
-        lastUpdate: Date.now(),
-        stats: { hunger: 100, thirst: 100, love: 100, energy: 100 },
-        stage: "egg",
-        isSleeping: false
-    };
-    
-    try {
-        const res = await fetch(`${API_URL}/settings`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(newSettings)
-        });
-        if (res.ok) {
-            alert("Tierchen zurückgesetzt.");
-            loadSettings();
-        }
-    } catch (err) { alert("Fehler beim Zurücksetzen."); }
-}
-
-async function toggleTamaVisibility() {
-    if (!currentSettings) return;
-    const newSettings = { ...currentSettings };
-    if (!newSettings.tamagotchi) return;
-    
-    const isVisible = newSettings.tamagotchi.visible !== false;
-    newSettings.tamagotchi.visible = !isVisible;
-    
-    try {
-        const res = await fetch(`${API_URL}/settings`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(newSettings)
-        });
-        if (res.ok) {
-            currentSettings = newSettings;
-            const visBtn = document.getElementById('tama-visibility-btn');
-            if (visBtn) {
-                visBtn.innerText = !isVisible ? "TAMA EIN" : "TAMA AUS"; // showing current state of target
-                visBtn.style.color = !isVisible ? "#60a5fa" : "#ef4444";
-                visBtn.style.borderColor = !isVisible ? "#60a5fa44" : "#ef444444";
-            }
-            // No alert needed for minimalist feel, just visual feedback
-        }
-    } catch (err) { alert("Fehler beim Umschalten."); }
-}
-
-// ── TAMAGOTCHI TEST CONSOLE ──────────────────────
-async function testTamaStats(h, t, l, f) {
-    if (!currentSettings) return;
-    const newSettings = JSON.parse(JSON.stringify(currentSettings));
-    if (!newSettings.tamagotchi) return;
-    newSettings.tamagotchi.stats = { 
-        hunger: h, 
-        thirst: t, 
-        love: l,
-        fun: f || 100
-    };
-    
-    try {
-        await fetch(`${API_URL}/settings`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(newSettings)
-        });
-        loadSettings();
-    } catch (err) { }
-}
-
-async function simulateTamaAction(action) {
-    if (!currentSettings) return;
-    // Deep clone to avoid mutation side effects
-    const newSettings = JSON.parse(JSON.stringify(currentSettings));
-    if (!newSettings.tamagotchi) return;
-    
-    newSettings.tamagotchi.lastAction = action;
-    newSettings.tamagotchi.lastActionTime = new Date().toISOString();
-    
-    // Immediate stat boost for the simulation (matching new gameplay balance)
-    if (action === 'play') {
-        newSettings.tamagotchi.stats.fun = Math.min(100, (newSettings.tamagotchi.stats.fun || 0) + 25);
-    } else if (action === 'feed') {
-        newSettings.tamagotchi.stats.hunger = Math.min(100, (newSettings.tamagotchi.stats.hunger || 0) + 25);
-    } else if (action === 'water') {
-        newSettings.tamagotchi.stats.thirst = Math.min(100, (newSettings.tamagotchi.stats.thirst || 0) + 25);
-    } else if (action === 'love') {
-        newSettings.tamagotchi.stats.love = Math.min(100, (newSettings.tamagotchi.stats.love || 0) + 25);
-    } else if (action === 'poop') {
-        newSettings.tamagotchi.poopCount = Math.min(100, (newSettings.tamagotchi.poopCount || 0) + 1);
-    }
-    
-    try {
-        const res = await fetch(`${API_URL}/settings`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(newSettings)
-        });
-        if (res.ok) {
-            console.log(`Action ${action} simulated.`);
-            loadSettings();
-        }
-    } catch (err) { }
-}
-
-async function toggleTamaSleep(active) {
-    if (!currentSettings) return;
-    const newSettings = { ...currentSettings };
-    if (!newSettings.tamagotchi) return;
-    newSettings.tamagotchi.isSleeping = active;
-    
-    try {
-        await fetch(`${API_URL}/settings`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(newSettings)
-        });
-        loadSettings();
-    } catch (err) { }
-}
 
 function testSound(id) {
     const file = `../audio/${id}.mp3`;
@@ -464,12 +290,10 @@ async function fetchStudentsSilent() {
                 updateField('setting-community-visible', freshSettings.communityGoalVisible !== false, true);
                 updateField('setting-community-title', freshSettings.communityTitle || "Pizza-Party");
                 updateField('setting-community-target', freshSettings.communityTarget || 500);
-                updateField('setting-tama-ignore-freeze', freshSettings.tamagotchi?.ignoreWeekendFreeze || false, true);
                 updateField('setting-vip-duration', freshSettings.vipDurationDays || 3);
                 window._vipDuration = freshSettings.vipDurationDays || 3;
                 
                 renderSotwCurrent();
-                updateTamagotchiAdmin(freshSettings.tamagotchi);
             }
         }
     } catch (err) { }
@@ -813,49 +637,65 @@ function renderAdminList(filter = "") {
         }
 
         // Badge chips + toggle using data attributes (avoids inline onclick escaping issues)
-        const studentBadgeIds = student.badges || [];
+        const studentBadges = student.badges || {};
         const hasBadges = allBadges.length > 0;
         let badgeSection = '';
         if (hasBadges) {
-            // Show only EARNED badges prominently
-            const earnedChips = allBadges
-                .filter(b => studentBadgeIds.includes(b.id))
-                .map(b => `
-                    <button 
-                        data-student="${student.id}" 
-                        data-badge="${b.id}"
-                        class="badge-chip-btn active"
-                        title="Einheit abwählen: ${b.name}"
-                        style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:0.72rem;font-weight:700;cursor:pointer;transition:all 0.2s;border:1px solid ${b.color};background:${b.color}33;color:${b.color}; shadow: 0 4px 10px ${b.color}22;">
-                        ${b.emoji} ${b.name}
-                    </button>`).join('');
+            const days = { mon: 'Mo', tue: 'Di', wed: 'Mi', thu: 'Do', fri: 'Fr' };
+            const getBadgeStyle = (badgeId) => {
+                const b = allBadges.find(x => String(x.id) === String(badgeId));
+                if (b) {
+                    return `background: ${b.color}22; border: 1px solid ${b.color}; color: ${b.color}; font-weight: 800;`;
+                }
+                return `background: rgba(255,255,255,0.03); border: 1px dashed rgba(255,255,255,0.2); color: rgba(255,255,255,0.4);`;
+            };
 
-            // Full picker for unassigned badges (hidden by default)
-            const unassignedChips = allBadges
-                .filter(b => !studentBadgeIds.includes(b.id))
-                .map(b => `
-                    <button 
-                        data-student="${student.id}" 
-                        data-badge="${b.id}"
-                        class="badge-chip-btn"
-                        title="Einheit zuweisen: ${b.name}"
-                        style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:0.72rem;font-weight:700;cursor:pointer;transition:all 0.2s;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.4);">
-                        ${b.emoji} ${b.name}
-                    </button>`).join('');
+            const getBadgeIds = (dayKey, dayIdx) => {
+                if (Array.isArray(studentBadges)) {
+                    return studentBadges[dayIdx] ? [studentBadges[dayIdx]] : [];
+                }
+                const val = studentBadges[dayKey];
+                if (Array.isArray(val)) return val;
+                if (val) return [val];
+                return [];
+            };
+
+            const columns = Object.entries(days).map(([dayKey, dayLabel], dayIdx) => {
+                const dayBadges = getBadgeIds(dayKey, dayIdx);
+                const selects = dayBadges.map((selectedId, idx) => {
+                    const options = allBadges.map(b => `
+                        <option value="${b.id}" ${String(b.id) === String(selectedId) ? 'selected' : ''} style="background: var(--bg-dark); color: white;">
+                            ${b.emoji} ${b.name}
+                        </option>`).join('');
+
+                    return `
+                        <select onchange="updateStudentWeekdayBadge('${student.id}', '${dayKey}', ${idx}, this.value)" style="
+                            width: 100%; text-align: center; font-size: 0.8rem; border-radius: 8px; padding: 5px 2px; cursor: pointer; -webkit-appearance: none; appearance: none; text-align-last: center; transition: all 0.2s; margin-bottom: 4px;
+                            ${getBadgeStyle(selectedId)}
+                        ">
+                            <option value="" style="background: var(--bg-dark); color: var(--text-muted);">— (Löschen)</option>
+                            ${options}
+                        </select>
+                    `;
+                }).join('');
+
+                return `
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; min-width: 0;">
+                        <span style="font-size: 0.65rem; font-weight: 900; color: var(--text-muted); text-transform: uppercase;">${dayLabel}</span>
+                        <div style="display: flex; flex-direction: column; width: 100%;">
+                            ${selects}
+                        </div>
+                        <button onclick="addStudentWeekdayBadge('${student.id}', '${dayKey}')" style="
+                            width: 100%; height: 24px; border-radius: 6px; border: 1px dashed rgba(255,255,255,0.15); background: rgba(255,255,255,0.02); color: rgba(255,255,255,0.4); cursor: pointer; font-size: 0.75rem; display: flex; align-items: center; justify-content: center; transition: all 0.2s; margin-top: 2px;
+                        " onmouseover="this.style.background='rgba(255,255,255,0.05)'; this.style.color='white';" onmouseout="this.style.background='rgba(255,255,255,0.02)'; this.style.color='rgba(255,255,255,0.4)';">＋</button>
+                    </div>
+                `;
+            }).join('');
 
             badgeSection = `
                 <div class="badge-row" style="margin-top:12px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.08);">
-                    <div style="display:flex; flex-wrap:wrap; gap:6px; align-items:center;">
-                        ${earnedChips}
-                        <button class="add-badge-toggle" onclick="this.parentElement.nextElementSibling.classList.toggle('hidden'); this.classList.toggle('active')" style="
-                            width:32px; height:32px; border-radius:10px; border:1px dashed rgba(255,255,255,0.2); background:rgba(255,255,255,0.03); color:rgba(255,255,255,0.5); cursor:pointer; font-weight:800; font-size:1.1rem; display:flex; align-items:center; justify-content:center; transition: all 0.2s;
-                        ">＋</button>
-                    </div>
-                    <div class="badge-picker-extra hidden" style="margin-top:10px; padding:10px; background:rgba(0,0,0,0.2); border-radius:14px; border:1px solid rgba(255,255,255,0.05); animation: fadeIn 0.3s ease-out;">
-                        <div style="font-size:0.65rem; color:var(--text-muted); font-weight:900; margin-bottom:8px; opacity:0.8; letter-spacing:0.05em;">VERFÜGBARE EINHEITEN:</div>
-                        <div style="display:flex; flex-wrap:wrap; gap:6px;">
-                            ${unassignedChips || '<span style="font-size:0.7rem; color:rgba(255,255,255,0.2);">Alle Einheiten bereits zugewiesen.</span>'}
-                        </div>
+                    <div style="display:flex; gap:6px; align-items:flex-start; width: 100%;">
+                        ${columns}
                     </div>
                 </div>`;
         }
@@ -935,6 +775,85 @@ async function toggleStudentBadge(studentId, badgeId) {
         ? current.filter(id => id !== badgeId)
         : [...current, badgeId];
     await assignBadgesToStudent(studentId, newBadges);
+}
+
+function ensureWeekdayArrays(student) {
+    if (!student.badges || Array.isArray(student.badges)) {
+        const oldB = student.badges || [];
+        student.badges = {
+            mon: oldB[0] ? [oldB[0]] : [],
+            tue: oldB[1] ? [oldB[1]] : [],
+            wed: oldB[2] ? [oldB[2]] : [],
+            thu: oldB[3] ? [oldB[3]] : [],
+            fri: oldB[4] ? [oldB[4]] : []
+        };
+    } else {
+        const days = ['mon', 'tue', 'wed', 'thu', 'fri'];
+        days.forEach(d => {
+            if (!student.badges[d]) {
+                student.badges[d] = [];
+            } else if (!Array.isArray(student.badges[d])) {
+                student.badges[d] = [student.badges[d]];
+            }
+        });
+    }
+}
+
+async function updateStudentWeekdayBadge(studentId, day, idx, badgeId) {
+    const student = window.students.find(s => s.id === studentId);
+    if (!student) return;
+
+    ensureWeekdayArrays(student);
+
+    if (badgeId === "") {
+        student.badges[day].splice(idx, 1);
+    } else {
+        student.badges[day][idx] = badgeId;
+    }
+
+    try {
+        const res = await fetch(`${API_URL}/students/${studentId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ badges: student.badges })
+        });
+        if (res.ok) {
+            const updated = await res.json();
+            student.badges = updated.badges;
+            renderAdminList(document.getElementById('search-students')?.value.toLowerCase() || '');
+        } else {
+            const errText = await res.text();
+            alert(`Fehler beim Zuweisen: ${res.status} \u2014 ${errText}`);
+        }
+    } catch (err) {
+        alert('Verbindungsfehler: ' + err.message);
+    }
+}
+
+async function addStudentWeekdayBadge(studentId, day) {
+    const student = window.students.find(s => s.id === studentId);
+    if (!student) return;
+
+    ensureWeekdayArrays(student);
+    student.badges[day].push("");
+
+    try {
+        const res = await fetch(`${API_URL}/students/${studentId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ badges: student.badges })
+        });
+        if (res.ok) {
+            const updated = await res.json();
+            student.badges = updated.badges;
+            renderAdminList(document.getElementById('search-students')?.value.toLowerCase() || '');
+        } else {
+            const errText = await res.text();
+            alert(`Fehler beim Hinzufügen: ${res.status} \u2014 ${errText}`);
+        }
+    } catch (err) {
+        alert('Verbindungsfehler: ' + err.message);
+    }
 }
 
 function formatDate(s) { const [y, m, d] = s.split('-'); return `${d}.${m}.${y}`; }
@@ -1191,7 +1110,6 @@ async function loadSettings() {
             updateField('setting-community-visible', settings.communityGoalVisible !== false, true);
             updateField('setting-community-title', settings.communityTitle || "Pizza-Party");
             updateField('setting-community-target', settings.communityTarget || 500);
-            updateField('setting-tama-ignore-freeze', settings.tamagotchi?.ignoreWeekendFreeze || false, true);
 
             if (settings.activities) {
                 const text = settings.activities.map(a => `${a.emoji} ${a.label}`).join('\n');
@@ -1235,16 +1153,6 @@ async function loadSettings() {
             renderLernzeitTeachers(settings.lernzeitTeachers || []);
 
             renderSotwCurrent();
-            updateTamagotchiAdmin(settings.tamagotchi);
-
-            // Sync Visibility Button
-            const visBtn = document.getElementById('tama-visibility-btn');
-            if (visBtn) {
-                const isVisible = settings.tamagotchi?.visible !== false;
-                visBtn.innerText = isVisible ? "TAMA EIN" : "TAMA AUS";
-                visBtn.style.color = isVisible ? "#60a5fa" : "#ef4444";
-                visBtn.style.borderColor = isVisible ? "#60a5fa44" : "#ef444444";
-            }
         }
     } catch (err) { }
 }
@@ -1316,10 +1224,6 @@ async function saveSettings() {
                 ...(currentSettings?.groupReward || { current: 0, icon: "🎬" }),
                 title: groupTitle,
                 target: groupTarget
-            },
-            tamagotchi: {
-                ...(currentSettings?.tamagotchi || {}),
-                ignoreWeekendFreeze: document.getElementById('setting-tama-ignore-freeze').checked
             }
         };
 
