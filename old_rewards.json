@@ -1,0 +1,45 @@
+{
+    "value":  [
+                  {
+                      "threshold":  8,
+                      "title":  "Eis essen",
+                      "icon":  "ğ?¦",
+                      "desc":  "Ein Eis deiner Wahl",
+                      "active":  true
+                  },
+                  {
+                      "threshold":  24,
+                      "title":  "Kino Nachmittag",
+                      "icon":  "ğ??¬",
+                      "desc":  "Film schauen mit Popcorn",
+                      "active":  true
+                  },
+                  {
+                      "threshold":  40,
+                      "title":  "GroÃ?e Ã?berraschung",
+                      "icon":  "ğ??",
+                      "desc":  "Etwas ganz Besonderes",
+                      "active":  true
+                  },
+                  {
+                      "threshold":  60,
+                      "title":  "3 Volle Karten Bonus",
+                      "icon":  "ğ??",
+                      "desc":  "Spezial-Belohnung fÃ¼r 3 volle Karten!",
+                      "active":  true
+                  },
+                  {
+                      "threshold":  80,
+                      "icon":  "ğ??®",
+                      "title":  "Level 4: Abenteuer-Ausflug",
+                      "desc":  "Ein besonderes Erlebnis in der Natur."
+                  },
+                  {
+                      "threshold":  100,
+                      "icon":  "ğ???",
+                      "title":  "Level 5: VIP Ehrengast",
+                      "desc":  "Ein ganzer Tag nach deinen WÃ¼nschen!"
+                  }
+              ],
+    "Count":  6
+}

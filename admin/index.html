@@ -146,15 +146,18 @@
                             <div style="display:flex; gap:8px; align-items:center;">
                                 <div class="coming-toggle-container"
                                     style="display:flex; background:rgba(255,255,255,0.05); border-radius:8px; padding:2px; border:1px solid rgba(255,255,255,0.1); width: fit-content;">
-                                    <button id="new-coming-btn-1200" type="button" onclick="selectNewComing(this, '12:00')"
+                                    <button id="new-coming-btn-1140" type="button" onclick="selectNewComing(this, '11:40')"
                                         class="coming-btn active"
-                                        style="border:none; background:var(--success); color:white; font-size:0.7rem; font-weight:800; padding:4px 10px; border-radius:6px; cursor:pointer;">12:00</button>
-                                    <button id="new-coming-btn-1300" type="button" onclick="selectNewComing(this, '13:00')"
+                                        style="border:none; background:var(--success); color:white; font-size:0.7rem; font-weight:800; padding:4px 10px; border-radius:6px; cursor:pointer;">11:40</button>
+                                    <button id="new-coming-btn-1235" type="button" onclick="selectNewComing(this, '12:35')"
                                         class="coming-btn"
-                                        style="border:none; background:none; color:rgba(255,255,255,0.3); font-size:0.7rem; font-weight:800; padding:4px 10px; border-radius:6px; cursor:pointer;">13:00</button>
+                                        style="border:none; background:none; color:rgba(255,255,255,0.3); font-size:0.7rem; font-weight:800; padding:4px 10px; border-radius:6px; cursor:pointer;">12:35</button>
+                                    <button id="new-coming-btn-1330" type="button" onclick="selectNewComing(this, '13:30')"
+                                        class="coming-btn"
+                                        style="border:none; background:none; color:rgba(255,255,255,0.3); font-size:0.7rem; font-weight:800; padding:4px 10px; border-radius:6px; cursor:pointer;">13:30</button>
                                 </div>
                                 <span style="font-size: 0.7rem; color: var(--text-muted);">oder:</span>
-                                <input type="text" id="new-student-coming" value="12:00" placeholder="z.B. 12:00" oninput="clearNewComingButtons()"
+                                <input type="text" id="new-student-coming" value="11:40" placeholder="z.B. 11:40" oninput="clearNewComingButtons()"
                                     style="width: 80px; text-align: center; padding: 4px 8px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); color: white; font-size: 0.75rem; font-weight: 700;">
                             </div>
                         </div>
@@ -165,6 +168,12 @@
                             <div style="display:flex; gap:8px; align-items:center;">
                                 <div class="pickup-toggle-container"
                                     style="display:flex; background:rgba(255,255,255,0.05); border-radius:8px; padding:2px; border:1px solid rgba(255,255,255,0.1); width: fit-content;">
+                                    <button id="new-pickup-btn-1330" type="button" onclick="selectNewPickup(this, '13:30')"
+                                        class="pickup-btn"
+                                        style="border:none; background:none; color:rgba(255,255,255,0.3); font-size:0.7rem; font-weight:800; padding:4px 10px; border-radius:6px; cursor:pointer;">13:30</button>
+                                    <button id="new-pickup-btn-1430" type="button" onclick="selectNewPickup(this, '14:30')"
+                                        class="pickup-btn"
+                                        style="border:none; background:none; color:rgba(255,255,255,0.3); font-size:0.7rem; font-weight:800; padding:4px 10px; border-radius:6px; cursor:pointer;">14:30</button>
                                     <button id="new-pickup-btn-1530" type="button" onclick="selectNewPickup(this, '15:30')"
                                         class="pickup-btn active"
                                         style="border:none; background:var(--primary); color:white; font-size:0.7rem; font-weight:800; padding:4px 10px; border-radius:6px; cursor:pointer;">15:30</button>

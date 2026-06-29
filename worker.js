@@ -713,7 +713,7 @@ export default {
                     redemptions: {},
                     attendance: attendance || { mon: false, tue: false, wed: false, thu: false, fri: false },
                     pickupTime: pickupTime || "15:30",
-                    comingTime: comingTime || "12:00"
+                    comingTime: comingTime || "11:40"
                 };
                 students.push(newStudent);
                 await putKV("students", JSON.stringify(students));
@@ -749,7 +749,7 @@ export default {
                         students[index].pickupTime = "15:30";
                     }
                     if (students[index].comingTime === undefined) {
-                        students[index].comingTime = "12:00";
+                        students[index].comingTime = "11:40";
                     }
 
                     if (stamps !== undefined) {

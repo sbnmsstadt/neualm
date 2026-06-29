@@ -1,0 +1,62 @@
+{
+    "communityTarget":  500,
+    "communityTitle":  "Pizza-Party",
+    "communityGoalVisible":  true,
+    "activities":  [
+                       {
+                           "emoji":  "?è?",
+                           "label":  "Sport-AG"
+                       },
+                       {
+                           "emoji":  "??ù",
+                           "label":  "Hausaufgaben"
+                       },
+                       {
+                           "emoji":  "?§ù",
+                           "label":  "Hilfe"
+                       },
+                       {
+                           "emoji":  "???",
+                           "label":  "Lesen"
+                       },
+                       {
+                           "emoji":  "??®",
+                           "label":  "Kreativ"
+                       },
+                       {
+                           "emoji":  "??≤",
+                           "label":  "Spielen"
+                       },
+                       {
+                           "emoji":  "???",
+                           "label":  "Projekt"
+                       },
+                       {
+                           "emoji":  "‚?®",
+                           "label":  "Sonstiges"
+                       }
+                   ],
+    "groupReward":  {
+                        "title":  "Filmtag",
+                        "target":  8,
+                        "current":  0,
+                        "icon":  "??¨",
+                        "active":  false
+                    },
+    "dailyNotes":  "",
+    "currentProjects":  "",
+    "upcomingProjects":  "",
+    "todayPlan":  "",
+    "studentOfWeek":  null,
+    "weather":  {
+                    "code":  2,
+                    "temp":  26,
+                    "lastSync":  1782726564933
+                },
+    "vipDurationDays":  3,
+    "tamagotchi":  {
+                       "ignoreWeekendFreeze":  true,
+                       "visible":  false
+                   },
+    "communityTotal":  12
+}

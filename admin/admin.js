@@ -881,15 +881,18 @@ function renderAdminList(filter = "") {
                     <div style="display:flex; align-items:center; gap:6px;">
                         <span style="font-size:0.6rem; color:var(--success); font-weight:800; letter-spacing:0.05em; opacity:0.85; width:45px; text-align:right;">KOMMEN:</span>
                         <div class="coming-toggle-container" style="display:flex; background:rgba(255,255,255,0.05); border-radius:8px; padding:2px; border:1px solid rgba(255,255,255,0.1);">
-                            <button onclick="updateComingTime('${student.id}', '12:00')" class="coming-btn ${student.comingTime === '12:00' ? 'active' : ''}" style="border:none; background:${student.comingTime === '12:00' ? 'var(--success)' : 'none'}; color:${student.comingTime === '12:00' ? 'white' : 'rgba(255,255,255,0.3)'}; font-size:0.6rem; font-weight:800; padding:2px 6px; border-radius:6px; cursor:pointer;">12:00</button>
-                            <button onclick="updateComingTime('${student.id}', '13:00')" class="coming-btn ${student.comingTime === '13:00' ? 'active' : ''}" style="border:none; background:${student.comingTime === '13:00' ? 'var(--success)' : 'none'}; color:${student.comingTime === '13:00' ? 'white' : 'rgba(255,255,255,0.3)'}; font-size:0.6rem; font-weight:800; padding:2px 6px; border-radius:6px; cursor:pointer;">13:00</button>
+                            <button onclick="updateComingTime('${student.id}', '11:40')" class="coming-btn ${student.comingTime === '11:40' ? 'active' : ''}" style="border:none; background:${student.comingTime === '11:40' ? 'var(--success)' : 'none'}; color:${student.comingTime === '11:40' ? 'white' : 'rgba(255,255,255,0.3)'}; font-size:0.6rem; font-weight:800; padding:2px 6px; border-radius:6px; cursor:pointer;">11:40</button>
+                            <button onclick="updateComingTime('${student.id}', '12:35')" class="coming-btn ${student.comingTime === '12:35' ? 'active' : ''}" style="border:none; background:${student.comingTime === '12:35' ? 'var(--success)' : 'none'}; color:${student.comingTime === '12:35' ? 'white' : 'rgba(255,255,255,0.3)'}; font-size:0.6rem; font-weight:800; padding:2px 6px; border-radius:6px; cursor:pointer;">12:35</button>
+                            <button onclick="updateComingTime('${student.id}', '13:30')" class="coming-btn ${student.comingTime === '13:30' ? 'active' : ''}" style="border:none; background:${student.comingTime === '13:30' ? 'var(--success)' : 'none'}; color:${student.comingTime === '13:30' ? 'white' : 'rgba(255,255,255,0.3)'}; font-size:0.6rem; font-weight:800; padding:2px 6px; border-radius:6px; cursor:pointer;">13:30</button>
                         </div>
-                        <input type="text" class="admin-coming-input" value="${student.comingTime || '12:00'}" onchange="updateComingTime('${student.id}', this.value)" style="width:48px; text-align:center; padding:2px; border-radius:6px; border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.05); color:white; font-size:0.65rem; font-weight:800;" placeholder="12:00">
+                        <input type="text" class="admin-coming-input" value="${student.comingTime || '11:40'}" onchange="updateComingTime('${student.id}', this.value)" style="width:48px; text-align:center; padding:2px; border-radius:6px; border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.05); color:white; font-size:0.65rem; font-weight:800;" placeholder="11:40">
                     </div>
                     <!-- Gehen Row -->
                     <div style="display:flex; align-items:center; gap:6px;">
                         <span style="font-size:0.6rem; color:var(--primary-light); font-weight:800; letter-spacing:0.05em; opacity:0.85; width:45px; text-align:right;">GEHEN:</span>
                         <div class="pickup-toggle-container" style="display:flex; background:rgba(255,255,255,0.05); border-radius:8px; padding:2px; border:1px solid rgba(255,255,255,0.1);">
+                            <button onclick="updatePickupTime('${student.id}', '13:30')" class="pickup-btn ${student.pickupTime === '13:30' ? 'active' : ''}" style="border:none; background:${student.pickupTime === '13:30' ? 'var(--primary)' : 'none'}; color:${student.pickupTime === '13:30' ? 'white' : 'rgba(255,255,255,0.3)'}; font-size:0.6rem; font-weight:800; padding:2px 6px; border-radius:6px; cursor:pointer;">13:30</button>
+                            <button onclick="updatePickupTime('${student.id}', '14:30')" class="pickup-btn ${student.pickupTime === '14:30' ? 'active' : ''}" style="border:none; background:${student.pickupTime === '14:30' ? 'var(--primary)' : 'none'}; color:${student.pickupTime === '14:30' ? 'white' : 'rgba(255,255,255,0.3)'}; font-size:0.6rem; font-weight:800; padding:2px 6px; border-radius:6px; cursor:pointer;">14:30</button>
                             <button onclick="updatePickupTime('${student.id}', '15:30')" class="pickup-btn ${student.pickupTime === '15:30' ? 'active' : ''}" style="border:none; background:${student.pickupTime === '15:30' ? 'var(--primary)' : 'none'}; color:${student.pickupTime === '15:30' ? 'white' : 'rgba(255,255,255,0.3)'}; font-size:0.6rem; font-weight:800; padding:2px 6px; border-radius:6px; cursor:pointer;">15:30</button>
                             <button onclick="updatePickupTime('${student.id}', '16:30')" class="pickup-btn ${student.pickupTime === '16:30' ? 'active' : ''}" style="border:none; background:${student.pickupTime === '16:30' ? 'var(--primary)' : 'none'}; color:${student.pickupTime === '16:30' ? 'white' : 'rgba(255,255,255,0.3)'}; font-size:0.6rem; font-weight:800; padding:2px 6px; border-radius:6px; cursor:pointer;">16:30</button>
                         </div>
@@ -1000,32 +1003,32 @@ async function createNewStudent() {
             document.querySelectorAll('.new-student-chip').forEach(chip => chip.classList.remove('active'));
             
             // Reset coming selection UI
-            if (comingInput) {
-                comingInput.value = '12:00';
-            }
-            const btn1200 = document.getElementById('new-coming-btn-1200');
-            const btn1300 = document.getElementById('new-coming-btn-1300');
-            if (btn1200 && btn1300) {
-                btn1200.classList.add('active');
-                btn1200.style.color = 'white';
-                btn1200.style.background = 'var(--success)';
-                btn1300.classList.remove('active');
-                btn1300.style.color = 'rgba(255,255,255,0.3)';
-                btn1300.style.background = 'none';
-            }
+            if (comingInput) comingInput.value = '11:40';
+            document.querySelectorAll('.coming-toggle-container .coming-btn').forEach(b => {
+                if (b.id === 'new-coming-btn-1140') {
+                    b.classList.add('active');
+                    b.style.color = 'white';
+                    b.style.background = 'var(--success)';
+                } else {
+                    b.classList.remove('active');
+                    b.style.color = 'rgba(255,255,255,0.3)';
+                    b.style.background = 'none';
+                }
+            });
 
             // Reset pickup selection UI
-            pickupInput.value = '15:30';
-            const btn1530 = document.getElementById('new-pickup-btn-1530');
-            const btn1630 = document.getElementById('new-pickup-btn-1630');
-            if (btn1530 && btn1630) {
-                btn1530.classList.add('active');
-                btn1530.style.color = 'white';
-                btn1530.style.background = 'var(--primary)';
-                btn1630.classList.remove('active');
-                btn1630.style.color = 'rgba(255,255,255,0.3)';
-                btn1630.style.background = 'none';
-            }
+            if (pickupInput) pickupInput.value = '15:30';
+            document.querySelectorAll('.pickup-toggle-container .pickup-btn').forEach(b => {
+                if (b.id === 'new-pickup-btn-1530') {
+                    b.classList.add('active');
+                    b.style.color = 'white';
+                    b.style.background = 'var(--primary)';
+                } else {
+                    b.classList.remove('active');
+                    b.style.color = 'rgba(255,255,255,0.3)';
+                    b.style.background = 'none';
+                }
+            });
 
             fetchStudents();
         } else {

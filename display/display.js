@@ -380,30 +380,39 @@ function renderAttendance() {
             return b ? `<span class="attendance-badge-icon" title="${b.name}">${b.emoji}</span>` : '';
         }).join('');
 
-        const time = isComing ? (s.comingTime || '12:00') : (s.pickupTime || '15:30');
+        const time = isComing ? (s.comingTime || '11:40') : (s.pickupTime || '15:30');
         const timeClass = time.replace(':', '');
         
         let color = '';
         let tagStyle = '';
         
         if (isComing) {
-            if (timeClass === '1200') {
+            if (timeClass === '1140') {
                 color = '#10b981'; // Green
                 tagStyle = 'color: #10b981; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.15);';
-            } else if (timeClass === '1300') {
-                color = '#06b6d4'; // Teal
-                tagStyle = 'color: #06b6d4; background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.15);';
+            } else if (timeClass === '1235') {
+                color = '#0ea5e9'; // Sky Blue
+                tagStyle = 'color: #0ea5e9; background: rgba(14, 165, 233, 0.08); border: 1px solid rgba(14, 165, 233, 0.15);';
+            } else if (timeClass === '1330') {
+                color = '#6366f1'; // Indigo
+                tagStyle = 'color: #6366f1; background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.15);';
             } else {
                 color = '#ec4899'; // Pink (Custom)
                 tagStyle = 'color: #ec4899; background: rgba(236, 72, 153, 0.12); border: 1px solid rgba(236, 72, 153, 0.25);';
             }
         } else {
-            if (timeClass === '1530') {
+            if (timeClass === '1330') {
+                color = '#06b6d4'; // Cyan
+                tagStyle = 'color: #06b6d4; background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.15);';
+            } else if (timeClass === '1430') {
                 color = '#3b82f6'; // Blue
                 tagStyle = 'color: #3b82f6; background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.15);';
-            } else if (timeClass === '1630') {
-                color = '#f59e0b'; // Orange/Amber
+            } else if (timeClass === '1530') {
+                color = '#f59e0b'; // Amber
                 tagStyle = 'color: #f59e0b; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.15);';
+            } else if (timeClass === '1630') {
+                color = '#f43f5e'; // Rose
+                tagStyle = 'color: #f43f5e; background: rgba(244, 63, 94, 0.08); border: 1px solid rgba(244, 63, 94, 0.15);';
             } else {
                 color = '#a78bfa'; // Purple (Custom)
                 tagStyle = 'color: #a78bfa; background: rgba(167, 139, 250, 0.12); border: 1px solid rgba(167, 139, 250, 0.25);';
