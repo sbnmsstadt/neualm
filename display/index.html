@@ -72,7 +72,7 @@
             position: relative;
             z-index: 1;
             display: grid;
-            grid-template-columns: 0.54fr 1.66fr 1.0fr;
+            grid-template-columns: 1.0fr 1.66fr 0.54fr;
             grid-template-rows: auto 1fr auto;
             gap: 18px;
             padding: 18px 18px 54px;
@@ -1581,35 +1581,38 @@
             </div>
         </header>
 
-        <!-- Left: Geburtstage + Schüler der Woche -->
+        <!-- Left: Projekte & Wichtiges -->
         <div class="left-col">
-            <!-- Geburtstage -->
-            <div class="card birthday-card">
-                <div class="card-header">
-                    <div class="card-icon" id="bday-icon">🎈</div>
-                    <div class="card-title" id="bday-title">GEBURTSTAGE</div>
+            <!-- Anstehende Projekte -->
+            <div class="card upcoming-projects-card" style="border-color: rgba(245, 158, 11, 0.3); flex: 0 0 18%; min-height: 0;">
+                <div class="card-header" style="gap: 8px; padding-bottom: 8px; border-bottom: 1px solid rgba(245, 158, 11, 0.1); margin-bottom: 4px;">
+                    <div class="card-icon" style="font-size: 1.1rem;">🔜</div>
+                    <div class="card-title" style="color: #f59e0b; font-size: 0.85rem;">Anstehende Projekte</div>
                 </div>
-                <div class="card-content">
-                    <div class="scroll-band" id="scroll-band">
-                        <div class="scroll-band-inner" id="scroll-band-inner"></div>
-                    </div>
+                <div class="card-content" id="upcoming-projects-list" style="font-size: 1.0rem; overflow-y: auto; font-weight: 700; color: white;">
+                    Lade...
                 </div>
             </div>
 
-            <!-- Lernzeit & Betreuung -->
-            <div class="card lernzeit-card" id="lernzeit-card" style="border-color: rgba(59, 130, 246, 0.3); background: rgba(59, 130, 246, 0.03); flex: 0 0 auto; padding: 12px 18px;">
-                <div class="card-header" style="padding-bottom: 8px; border-bottom: 1px solid rgba(59, 130, 246, 0.1); margin-bottom: 5px;">
-                    <div class="card-icon" style="font-size: 1.1rem;">✏️</div>
-                    <div class="card-title" style="color: #60a5fa; font-size: 0.85rem;">Lernzeit & Betreuung</div>
+            <!-- Laufende Projekte -->
+            <div class="card current-projects-card" style="border-color: rgba(16, 185, 129, 0.3); flex: 1; min-height: 0;">
+                <div class="card-header" style="gap: 8px; padding-bottom: 8px; border-bottom: 1px solid rgba(16, 185, 129, 0.1); margin-bottom: 4px;">
+                    <div class="card-icon" style="font-size: 1.1rem;">🚀</div>
+                    <div class="card-title" style="color: #10b981; font-size: 0.85rem;">Laufende Projekte</div>
                 </div>
-                <div class="card-content" style="display: flex; flex-direction: column; justify-content: center; gap: 4px; padding: 5px 0;">
-                    <div style="display: flex; align-items: center; gap: 15px;">
-                        <span style="font-size: 2rem; animation: badgeFloat 3s ease-in-out infinite; flex-shrink: 0; width: 50px; text-align: center;">🧑‍🏫</span>
-                        <div style="display: flex; flex-direction: column; min-width: 0;">
-                            <div id="lernzeit-lehrer" style="font-size: 1.1rem; font-weight: 900; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Lade...</div>
-                            <div id="lernzeit-uhrzeit" style="font-size: 0.78rem; font-weight: 600; color: #60a5fa; font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">14:30 - 15:20 Uhr</div>
-                        </div>
-                    </div>
+                <div class="card-content" id="projects-list" style="font-size: 1.1rem; overflow-y: auto; font-weight: 800; color: white; line-height: 1.4;">
+                    Lade...
+                </div>
+            </div>
+
+            <!-- Wichtiges für heute (Daily Notes) -->
+            <div class="card daily-notes-card" style="flex: 1.5; min-height: 0; border-color: rgba(59, 130, 246, 0.3);">
+                <div class="card-header" style="gap: 8px; padding-bottom: 8px; border-bottom: 1px solid rgba(59, 130, 246, 0.1); margin-bottom: 4px;">
+                    <div class="card-icon" style="font-size: 1.1rem;">📝</div>
+                    <div class="card-title" style="color: #60a5fa; font-size: 0.85rem;">Wichtiges für heute</div>
+                </div>
+                <div class="card-content daily-notes-content" id="daily-notes-list" style="font-size: 1.15rem; overflow-y: auto; font-weight: 800; color: white;">
+                    Lade...
                 </div>
             </div>
 
@@ -1622,28 +1625,6 @@
                 <div class="card-content">
                     <div class="sotw-content" id="sotw-content">
                         <!-- Rendered by JS -->
-                    </div>
-                </div>
-            </div>
-
-            <!-- NEU: Unterrichts-Galerie (Motivation) -->
-            <div class="card badge-galerie-card" id="badge-galerie-card" style="border-color: rgba(139, 92, 246, 0.3); background: rgba(139, 92, 246, 0.03); flex: 0 0 auto; padding: 12px 18px;">
-                <div class="card-header" style="padding-bottom: 8px; border-bottom: 1px solid rgba(139, 92, 246, 0.1); margin-bottom: 5px;">
-                    <div class="card-icon" style="font-size: 1.1rem;">📚</div>
-                    <div class="card-title" style="color: #a78bfa; font-size: 0.85rem;">UNTERRICHTS-EINHEITEN</div>
-                </div>
-                <div class="card-content" id="badge-galerie-content" style="display: flex; flex-direction: row; align-items: center; justify-content: space-between; text-align: left; gap: 15px; padding: 5px 0;">
-                    <!-- Dieser Teil wird per JS ausgefadet -->
-                    <div id="badge-refresh-area" style="display: flex; align-items: center; gap: 15px; flex: 1; min-width: 0; transition: opacity 0.6s ease;">
-                        <div id="badge-display-icon" style="font-size: 2.2rem; filter: drop-shadow(0 0 10px rgba(139, 92, 246, 0.4)); animation: badgeFloat 3s ease-in-out infinite; flex-shrink: 0; width: 50px; text-align: center;">✨</div>
-                        <div style="display: flex; flex-direction: column; gap: 2px; min-width: 0;">
-                            <div id="badge-display-name" style="font-size: 1.1rem; font-weight: 900; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Lade...</div>
-                            <div id="badge-display-desc" style="font-size: 0.78rem; font-weight: 600; color: #a78bfa; font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">-</div>
-                        </div>
-                    </div>
-                    <!-- Dieser Teil bleibt KONSTANT und glüht -->
-                    <div style="flex-shrink: 0; background: rgba(139, 92, 246, 0.15); border: 1px solid rgba(139, 92, 246, 0.4); padding: 5px 12px; border-radius: 20px; box-shadow: 0 0 15px rgba(139, 92, 246, 0.3); animation: badgeGlow 2s ease-in-out infinite alternate; margin-right: 15px;">
-                        <div style="font-size: 0.65rem; font-weight: 900; color: white; text-transform: uppercase; letter-spacing: 0.05em; line-height: 1.1; text-align: center;">Mach aktiv<br>mit!</div>
                     </div>
                 </div>
             </div>
@@ -1666,6 +1647,23 @@
                         <div class="filmtag-target" id="filmtag-target" style="font-size: 1.4rem;">?</div>
                     </div>
                     <div id="filmtag-status" style="font-size:0.75rem; color:var(--text-muted); font-weight:700;"></div>
+                </div>
+            </div>
+
+            <!-- Lernzeit & Betreuung -->
+            <div class="card lernzeit-card" id="lernzeit-card" style="border-color: rgba(59, 130, 246, 0.3); background: rgba(59, 130, 246, 0.03); flex: 0 0 auto; padding: 12px 18px; align-self: center; width: 100%; max-width: 600px;">
+                <div class="card-header" style="padding-bottom: 8px; border-bottom: 1px solid rgba(59, 130, 246, 0.1); margin-bottom: 5px; justify-content: center; gap: 8px;">
+                    <div class="card-icon" style="font-size: 1.1rem;">✏️</div>
+                    <div class="card-title" style="color: #60a5fa; font-size: 0.85rem; text-align: center;">Lernzeit & Betreuung</div>
+                </div>
+                <div class="card-content" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 5px 0;">
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 15px; width: 100%;">
+                        <span style="font-size: 2rem; animation: badgeFloat 3s ease-in-out infinite; flex-shrink: 0; width: 50px; text-align: center;">🧑‍🏫</span>
+                        <div style="display: flex; flex-direction: column; align-items: center; min-width: 0; text-align: center;">
+                            <div id="lernzeit-lehrer" style="font-size: 1.1rem; font-weight: 900; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Lade...</div>
+                            <div id="lernzeit-uhrzeit" style="font-size: 0.78rem; font-weight: 600; color: #60a5fa; font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">14:30 - 15:20 Uhr</div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -1701,9 +1699,9 @@
 
         </div>
 
-        <!-- Right: VIP & Daily Notes & Tamagotchi -->
+        <!-- Right: VIP & Unterrichts-Galerie -->
         <div class="right-col">
-            <div class="card vip-card">
+            <div class="card vip-card" style="flex-shrink: 0;">
                 <div class="card-header">
                     <div class="card-icon">⭐</div>
                     <div class="card-title">Aktueller VIP</div>
@@ -1713,13 +1711,25 @@
                 </div>
             </div>
 
-            <div class="card daily-notes-card" style="flex:1;">
-                <div class="card-header">
-                    <div class="card-icon">📝</div>
-                    <div class="card-title">Wichtiges für heute</div>
+            <!-- Unterrichts-Galerie (Motivation) -->
+            <div class="card badge-galerie-card" id="badge-galerie-card" style="border-color: rgba(139, 92, 246, 0.3); background: rgba(139, 92, 246, 0.03); flex: 1; padding: 12px 18px; min-height: 0; display: flex; flex-direction: column;">
+                <div class="card-header" style="padding-bottom: 8px; border-bottom: 1px solid rgba(139, 92, 246, 0.1); margin-bottom: 5px;">
+                    <div class="card-icon" style="font-size: 1.1rem;">📚</div>
+                    <div class="card-title" style="color: #a78bfa; font-size: 0.85rem;">UNTERRICHTS-EINHEITEN</div>
                 </div>
-                <div class="card-content daily-notes-content" id="daily-notes-list">
-                    Lade Notizen...
+                <div class="card-content" id="badge-galerie-content" style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 15px; padding: 5px 0; flex: 1;">
+                    <!-- Dieser Teil wird per JS ausgefadet -->
+                    <div id="badge-refresh-area" style="display: flex; flex-direction: column; align-items: center; gap: 10px; transition: opacity 0.6s ease; width: 100%;">
+                        <div id="badge-display-icon" style="font-size: 3.5rem; filter: drop-shadow(0 0 10px rgba(139, 92, 246, 0.4)); animation: badgeFloat 3s ease-in-out infinite;">✨</div>
+                        <div style="display: flex; flex-direction: column; gap: 4px; width: 100%;">
+                            <div id="badge-display-name" style="font-size: 1.3rem; font-weight: 900; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Lade...</div>
+                            <div id="badge-display-desc" style="font-size: 0.9rem; font-weight: 600; color: #a78bfa; font-style: italic; line-height: 1.3;">-</div>
+                        </div>
+                    </div>
+                    <!-- Dieser Teil bleibt KONSTANT und glüht -->
+                    <div style="background: rgba(139, 92, 246, 0.15); border: 1px solid rgba(139, 92, 246, 0.4); padding: 6px 16px; border-radius: 20px; box-shadow: 0 0 15px rgba(139, 92, 246, 0.3); animation: badgeGlow 2s ease-in-out infinite alternate;">
+                        <div style="font-size: 0.75rem; font-weight: 900; color: white; text-transform: uppercase; letter-spacing: 0.05em; line-height: 1.1; text-align: center;">Mach aktiv<br>mit!</div>
+                    </div>
                 </div>
             </div>
         </div>

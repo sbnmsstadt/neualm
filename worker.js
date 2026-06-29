@@ -2,7 +2,7 @@ async function getKV(env, key) {
     // Try D1 first
     const res = await env.DB.prepare("SELECT value FROM kv_data WHERE id = ?").bind(key).first("value");
     if (res) return res;
-    
+
     // Fallback to KV for migration (if it exists and is not 429'd for reads)
     if (env.DATABASE) {
         try {
@@ -24,7 +24,7 @@ export default {
             // Try D1 first
             const res = await env.DB.prepare("SELECT value FROM kv_data WHERE id = ?").bind(key).first("value");
             if (res) return res;
-            
+
             // Fallback to KV for migration (if it exists and is not 429'd for reads)
             if (env.DATABASE) {
                 try {
@@ -36,7 +36,7 @@ export default {
 
         async function putKV(key, value, options = {}) {
             await env.DB.prepare("INSERT OR REPLACE INTO kv_data (id, value) VALUES (?, ?)").bind(key, value).run();
-            
+
             // Mirror to KV if database binding exists (for migration/fallback)
             if (env.DATABASE) {
                 try {
@@ -70,22 +70,12 @@ export default {
         function getBadgeList(b) {
             if (!b) return [];
             if (Array.isArray(b)) return b.filter(Boolean);
-            if (typeof b === 'object') {
-                let list = [];
-                for (const val of Object.values(b)) {
-                    if (Array.isArray(val)) {
-                        list.push(...val.filter(Boolean));
-                    } else if (val) {
-                        list.push(val);
-                    }
-                }
-                return list;
-            }
+            if (typeof b === 'object') return Object.values(b).filter(Boolean);
             return [];
         }
 
         const url = new URL(request.url);
-        const path = url.pathname.replace(/\/$/, ""); 
+        const path = url.pathname.replace(/\/$/, "");
         const method = request.method;
 
         const corsHeaders = {
@@ -110,7 +100,7 @@ export default {
                 const { password } = await request.json();
                 // Check against environment secret ADMIN_PW
                 const correctPw = env.ADMIN_PW || "5400";
-                
+
                 if (String(password) === String(correctPw)) {
                     return new Response(JSON.stringify({ success: true }), {
                         headers: { ...corsHeaders, "Content-Type": "application/json" }
@@ -155,7 +145,7 @@ export default {
 
             events.push(newEvent);
             await putKV("events", JSON.stringify(events));
-            
+
             return new Response(JSON.stringify(newEvent), {
                 status: 201,
                 headers: { ...corsHeaders, "Content-Type": "application/json" }
@@ -170,7 +160,7 @@ export default {
 
             events = events.filter(e => String(e.id) !== String(id));
             await putKV("events", JSON.stringify(events));
-            
+
             return new Response(null, { status: 204, headers: corsHeaders });
         }
 
@@ -213,17 +203,17 @@ export default {
             if (path === "/api/sync/student" && method === "GET") {
                 const id = url.searchParams.get("id");
                 if (!id) return new Response("Missing ID", { status: 400, headers: corsHeaders });
-                
+
                 const [studentsRaw, settingsRaw, rewardsRaw] = await Promise.all([
                     getKV("students"),
                     getKV("settings"),
                     getKV("rewards")
                 ]);
-                
+
                 const students = JSON.parse(studentsRaw || "[]");
                 const student = students.find(s => s.id === id);
                 if (!student) return new Response("Not found", { status: 404, headers: corsHeaders });
-                
+
                 return new Response(JSON.stringify({
                     student,
                     settings: JSON.parse(settingsRaw || "{}"),
@@ -277,7 +267,7 @@ export default {
                 if (!env.DATABASE) return new Response("KV nicht gefunden", { status: 404, headers: corsHeaders });
                 const mainKeys = ["settings", "students", "rewards", "projects", "badges"];
                 let count = 0;
-                
+
                 // Migrate main keys
                 for (const k of mainKeys) {
                     const val = await env.DATABASE.get(k);
@@ -324,9 +314,9 @@ export default {
                     { label: "Projekt", emoji: "🚀" },
                     { label: "Sonstiges", emoji: "✨" }
                 ];
-                
-                let settings = settingsRaw ? JSON.parse(settingsRaw) : { 
-                    communityTarget: 500, 
+
+                let settings = settingsRaw ? JSON.parse(settingsRaw) : {
+                    communityTarget: 500,
                     communityTitle: "Pizza-Party",
                     communityGoalVisible: true,
                     activities: defaultActivities,
@@ -351,7 +341,7 @@ export default {
                 const studentsRaw = await getKV("students");
                 const students = JSON.parse(studentsRaw || "[]");
                 settings.communityTotal = students.reduce((sum, s) => sum + (s.stamps || 0), 0);
-                
+
                 return new Response(JSON.stringify(settings), {
                     headers: { ...corsHeaders, "Content-Type": "application/json" }
                 });
@@ -368,11 +358,11 @@ export default {
             if (path === "/api/settings/group-approve" && method === "POST") {
                 const settingsRaw = await getKV("settings");
                 let settings = JSON.parse(settingsRaw || "{}");
-                
+
                 if (settings.groupReward) {
                     settings.groupReward.isApproved = true;
                     settings.groupReward.active = false; // Hide donation button after final approval
-                    
+
                     // Trigger Celebration
                     settings.celebration = {
                         id: Date.now(),
@@ -410,20 +400,20 @@ export default {
             if (path === "/api/settings/group-reset" && method === "POST") {
                 const settingsRaw = await getKV("settings");
                 let settings = JSON.parse(settingsRaw || "{}");
-                
+
                 if (settings.groupReward) {
                     settings.groupReward.current = 0;
                     settings.groupReward.isApproved = false;
                     settings.groupReward.active = false; // Zurücksetzen auf inaktiv nach Reset
-                    
+
                     // Celebration deaktivieren
                     if (settings.celebration) {
                         settings.celebration.active = false;
                     }
-                    
+
                     await putKV("settings", JSON.stringify(settings));
                 }
-                
+
                 return new Response(JSON.stringify({ settings }), {
                     headers: { ...corsHeaders, "Content-Type": "application/json" }
                 });
@@ -459,7 +449,7 @@ export default {
                 const body = await request.json();
                 const projectsRaw = await getKV("projects");
                 let projects = projectsRaw ? JSON.parse(projectsRaw) : [];
-                
+
                 const newProject = {
                     id: Date.now().toString(),
                     title: body.title || "Ohne Titel",
@@ -469,9 +459,9 @@ export default {
                     status: "library",
                     createdAt: new Date().toISOString()
                 };
-                
+
                 projects.push(newProject);
-                
+
                 await putKV("projects", JSON.stringify(projects));
                 return new Response(JSON.stringify(newProject), {
                     status: 201,
@@ -632,14 +622,14 @@ export default {
                     counter++;
                 }
 
-                const newStudent = { 
-                    id: finalId, 
-                    name: name, 
-                    stamps: 0, 
-                    usedStamps: 0, 
-                    birthday: birthday || null, 
+                const newStudent = {
+                    id: finalId,
+                    name: name,
+                    stamps: 0,
+                    usedStamps: 0,
+                    birthday: birthday || null,
                     avatar: null,
-                    badges: { mon: [], tue: [], wed: [], thu: [], fri: [] },
+                    badges: { mon: null, tue: null, wed: null, thu: null, fri: null },
                     history: [],
                     redemptions: {},
                     attendance: attendance || { mon: false, tue: false, wed: false, thu: false, fri: false },
@@ -674,22 +664,12 @@ export default {
                     if (students[index].badges === undefined || Array.isArray(students[index].badges)) {
                         const oldB = students[index].badges || [];
                         students[index].badges = {
-                            mon: oldB[0] ? [oldB[0]] : [],
-                            tue: oldB[1] ? [oldB[1]] : [],
-                            wed: oldB[2] ? [oldB[2]] : [],
-                            thu: oldB[3] ? [oldB[3]] : [],
-                            fri: oldB[4] ? [oldB[4]] : []
+                            mon: oldB[0] || null,
+                            tue: oldB[1] || null,
+                            wed: oldB[2] || null,
+                            thu: oldB[3] || null,
+                            fri: oldB[4] || null
                         };
-                    } else {
-                        // Ensure everything is an array
-                        const days = ['mon', 'tue', 'wed', 'thu', 'fri'];
-                        days.forEach(d => {
-                            if (!students[index].badges[d]) {
-                                students[index].badges[d] = [];
-                            } else if (!Array.isArray(students[index].badges[d])) {
-                                students[index].badges[d] = [students[index].badges[d]];
-                            }
-                        });
                     }
                     if (students[index].history === undefined) students[index].history = [];
                     if (students[index].attendance === undefined) {
@@ -706,9 +686,9 @@ export default {
                         // If stamps increased, track history
                         if (stamps > students[index].stamps) {
                             const today = new Date().toISOString().split('T')[0];
-                            students[index].history.push({ 
-                                date: today, 
-                                reason: reason || "Stempel" 
+                            students[index].history.push({
+                                date: today,
+                                reason: reason || "Stempel"
                             });
                         }
                         students[index].stamps = stamps;
@@ -717,9 +697,9 @@ export default {
                     if (pickupTime !== undefined) students[index].pickupTime = pickupTime;
                     if (comingTime !== undefined) students[index].comingTime = comingTime;
                     if (attendance !== undefined) {
-                        students[index].attendance = { 
-                            ...students[index].attendance, 
-                            ...attendance 
+                        students[index].attendance = {
+                            ...students[index].attendance,
+                            ...attendance
                         };
                     }
                     if (badges !== undefined) {
@@ -772,7 +752,7 @@ export default {
                 if (index === -1) return new Response("Not Found", { status: 404, headers: corsHeaders });
 
                 if (!students[index].pedagogical_logs) students[index].pedagogical_logs = [];
-                
+
                 students[index].pedagogical_logs.push({
                     id: Date.now().toString(),
                     type: type || "neutral",
@@ -798,26 +778,26 @@ export default {
                 const studentId = parts[2];
                 const logId = parts[4];
                 const { type, text } = await request.json();
-                
+
                 const studentsRaw = await getKV("students");
                 let students = JSON.parse(studentsRaw || "[]");
                 const studentIdx = students.findIndex(s => String(s.id) === String(studentId));
-                
+
                 if (studentIdx === -1) return new Response("Student Not Found", { status: 404, headers: corsHeaders });
-                
+
                 const logs = students[studentIdx].pedagogical_logs || [];
                 const logIdx = logs.findIndex(l => String(l.id) === String(logId));
-                
+
                 if (logIdx === -1) return new Response("Log Not Found", { status: 404, headers: corsHeaders });
-                
+
                 const oldDate = logs[logIdx].date;
                 logs[logIdx] = { ...logs[logIdx], type: type || logs[logIdx].type, text: text || logs[logIdx].text };
-                
+
                 await putKV("students", JSON.stringify(students));
-                
+
                 // Invalidate AI summary cache for the date of the log
                 await env.DB.prepare("DELETE FROM kv_data WHERE id = ?").bind(`day_summary_${oldDate}`).run();
-                
+
                 return new Response(JSON.stringify(students[studentIdx]), {
                     headers: { ...corsHeaders, "Content-Type": "application/json" }
                 });
@@ -828,26 +808,26 @@ export default {
                 const parts = path.split("/").filter(Boolean);
                 const studentId = parts[2];
                 const logId = parts[4];
-                
+
                 const studentsRaw = await getKV("students");
                 let students = JSON.parse(studentsRaw || "[]");
                 const studentIdx = students.findIndex(s => String(s.id) === String(studentId));
-                
+
                 if (studentIdx === -1) return new Response("Student Not Found", { status: 404, headers: corsHeaders });
-                
+
                 const logs = students[studentIdx].pedagogical_logs || [];
                 const logIdx = logs.findIndex(l => String(l.id) === String(logId));
-                
+
                 if (logIdx === -1) return new Response("Log Not Found", { status: 404, headers: corsHeaders });
-                
+
                 const oldDate = logs[logIdx].date;
                 students[studentIdx].pedagogical_logs = logs.filter(l => String(l.id) !== String(logId));
-                
+
                 await putKV("students", JSON.stringify(students));
-                
+
                 // Invalidate AI summary cache for the date of the log
                 await env.DB.prepare("DELETE FROM kv_data WHERE id = ?").bind(`day_summary_${oldDate}`).run();
-                
+
                 return new Response(JSON.stringify(students[studentIdx]), {
                     headers: { ...corsHeaders, "Content-Type": "application/json" }
                 });
@@ -917,8 +897,8 @@ export default {
                             students[index].usedStamps = students[index].usedStamps + reqThreshold;
                         }
                     } else if (students[index].usedStamps === undefined) {
-                         // Initialize to 0 if not exists (Milestones don't count)
-                         students[index].usedStamps = 0;
+                        // Initialize to 0 if not exists (Milestones don't count)
+                        students[index].usedStamps = 0;
                     }
 
                     // --- NEW: If reward title is "Filmtag", activate/increment group progress ---
@@ -959,16 +939,16 @@ export default {
                     // Calculate free stamps
                     let usedStamps = student.usedStamps || 0;
                     if (usedStamps === 0 && student.redemptions) {
-                         Object.entries(student.redemptions).forEach(([t, s]) => {
+                        Object.entries(student.redemptions).forEach(([t, s]) => {
                             if (s === 'completed') usedStamps += parseInt(t);
-                         });
+                        });
                     }
                     const freeStamps = student.stamps - usedStamps;
 
                     // NEW: Check if group reward is ACTIVE
                     const settingsRaw = await getKV("settings");
                     let settings = JSON.parse(settingsRaw || "{}");
-                    
+
                     if (!settings.groupReward || !settings.groupReward.active) {
                         return new Response("Gruppen-Belohnung ist aktuell nicht aktiv (muss erst gestartet werden)", { status: 400, headers: corsHeaders });
                     }
@@ -984,14 +964,14 @@ export default {
 
                         if (!student.history) student.history = [];
                         student.history.push({ date: new Date().toISOString().split('T')[0], reason: `Spende für ${settings.groupReward.title}` });
-                        
+
                         settings.groupReward.current = (settings.groupReward.current || 0) + 1;
-                        
+
                         // NEW: Auto-approve and trigger celebration if goal reached
                         if (settings.groupReward.current >= settings.groupReward.target) {
                             settings.groupReward.isApproved = true;
                             settings.groupReward.active = false; // Hide donation button
-                            
+
                             settings.celebration = {
                                 id: Date.now(),
                                 title: settings.groupReward.title || "Filmtag",
@@ -1003,8 +983,8 @@ export default {
                             students.forEach(s => {
                                 if (s.contributedToCurrent) {
                                     if (!s.history) s.history = [];
-                                    s.history.push({ 
-                                        date: today, 
+                                    s.history.push({
+                                        date: today,
                                         reason: `${settings.groupReward.title || 'Filmtag'} Ziel erreicht! 🎉`,
                                         emoji: "🎬"
                                     });
@@ -1012,10 +992,10 @@ export default {
                                 }
                             });
                         }
-                        
+
                         await putKV("students", JSON.stringify(students));
                         await putKV("settings", JSON.stringify(settings));
-                        
+
                         return new Response(JSON.stringify(student), {
                             headers: { ...corsHeaders, "Content-Type": "application/json" }
                         });
@@ -1076,7 +1056,7 @@ export default {
                 try {
                     const apiKey = (env.KI_API || "").trim().replace(/^"|"$/g, '');
                     const result = await callGemini(promptText, apiKey, { temperature: 0.7, maxTokens: 4000 });
-                    
+
                     if (result.success) {
                         return new Response(JSON.stringify({ text: result.text, model: result.model }), {
                             headers: { ...corsHeaders, "Content-Type": "application/json" }
@@ -1119,7 +1099,7 @@ export default {
                             const searchDate = String(date || "").trim();
                             return logDate === searchDate || (l.timestamp && l.timestamp.split('T')[0] === searchDate);
                         });
-                        
+
                         logs.forEach(l => {
                             dayLogs.push({ studentName: s.name, type: l.type, text: l.text });
                         });
@@ -1127,7 +1107,7 @@ export default {
                 });
 
                 if (dayLogs.length === 0) {
-                    return new Response(JSON.stringify({ 
+                    return new Response(JSON.stringify({
                         text: "Keine Einträge für diesen Tag gefunden.",
                         date: date
                     }), {
@@ -1156,13 +1136,13 @@ Schreibstil: Fachlich fundiert, klar und analytisch. Vermeide übermäßig emoti
                 if (!apiKey || apiKey.length < 10) return new Response("Ungültiger API Key (KI_API fehlt)", { status: 500, headers: corsHeaders });
 
                 let result = await callGemini(prompt, apiKey, { temperature: 0.7, maxTokens: 2000 });
-                
+
                 // --- SMART RETRY: Check for incomplete sentences ---
                 if (result.success && result.text) {
                     const trimmed = result.text.trim();
                     const lastChar = trimmed.slice(-1);
                     const sentenceEndings = ['.', '!', '?', '"', '”', '…'];
-                    
+
                     if (!sentenceEndings.includes(lastChar)) {
                         console.log("NACHMI: Truncated day summary detected, retrying with lower temperature...");
                         const retryResult = await callGemini(prompt + "\n\nWICHTIG: Deine letzte Nachricht war abgeschnitten. Beende deinen Text UNBEDINGT mit einem vollständigen Satz und Punkt!", apiKey, { temperature: 0.4, maxTokens: 2000 });
@@ -1171,7 +1151,7 @@ Schreibstil: Fachlich fundiert, klar und analytisch. Vermeide übermäßig emoti
                         }
                     }
                 }
-                
+
                 if (result.success) {
                     // Cache the result
                     await putKV(cacheKey, result.text);
@@ -1182,7 +1162,7 @@ Schreibstil: Fachlich fundiert, klar und analytisch. Vermeide übermäßig emoti
                             const telegramChatId = env.TELEGRAM_LOGBUCH_CHAT_ID || env.TELEGRAM_CHAT_ID;
                             if (telegramChatId) {
                                 await sendTelegramMessage(
-                                    env, 
+                                    env,
                                     `📝 KI-Tageszusammenfassung (${date}):\n\n${result.text}`,
                                     env.TELEGRAM_LOGBUCH_TOKEN,
                                     telegramChatId
@@ -1197,26 +1177,26 @@ Schreibstil: Fachlich fundiert, klar und analytisch. Vermeide übermäßig emoti
                         headers: { ...corsHeaders, "Content-Type": "application/json" }
                     });
                 } else {
-                    return new Response(JSON.stringify({ 
-                        text: `KI-Fehler: ${result.error}`, 
-                        details: result.details 
-                    }), { 
-                        status: 500, 
-                        headers: { ...corsHeaders, "Content-Type": "application/json" } 
+                    return new Response(JSON.stringify({
+                        text: `KI-Fehler: ${result.error}`,
+                        details: result.details
+                    }), {
+                        status: 500,
+                        headers: { ...corsHeaders, "Content-Type": "application/json" }
                     });
                 }
             }
-            
+
             if (path === "/api/ai/day-summary/archive" && method === "POST") {
                 try {
                     const body = await request.json();
                     if (!body.date || !body.text) {
                         return new Response(JSON.stringify({ error: "Missing date or text" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
                     }
-                    
+
                     console.log(`Archiving report for ${body.date} (Length: ${body.text.length})`);
                     await putKV(`archived_summary_${body.date}`, body.text);
-                    
+
                     // Also clear the fast cache to stay in sync
                     await putKV(`day_summary_${body.date}`, body.text);
 
@@ -1233,7 +1213,7 @@ Schreibstil: Fachlich fundiert, klar und analytisch. Vermeide übermäßig emoti
                 // 1. Get dates from D1
                 const { results } = await env.DB.prepare("SELECT id FROM kv_data WHERE id LIKE 'archived_summary_%'").all();
                 let dates = results.map(r => r.id.replace("archived_summary_", ""));
-                
+
                 // 2. Get dates from KV if available
                 if (env.DATABASE) {
                     try {
@@ -1322,7 +1302,7 @@ Deine Aufgabe: Schreibe eine kurze, energiegeladene Message (ca. 40-60 Wörter):
                     const trimmed = result.text.trim();
                     const lastChar = trimmed.slice(-1);
                     const sentenceEndings = ['.', '!', '?', '"', '”', '…'];
-                    
+
                     if (!sentenceEndings.includes(lastChar)) {
                         console.log("NACHMI: Truncated message detected, retrying with lower temperature...");
                         // Second attempt with lower temperature (0.4) for more determinism
@@ -1336,16 +1316,16 @@ Deine Aufgabe: Schreibe eine kurze, energiegeladene Message (ca. 40-60 Wörter):
                 if (result.success) {
                     // --- Store in KV for 24 hours ---
                     await putKV(cacheKey, result.text, { expirationTtl: 86400 });
-                    
+
                     return new Response(JSON.stringify({ text: result.text, model: result.model }), {
                         headers: { ...corsHeaders, "Content-Type": "application/json" }
                     });
                 } else {
-                    return new Response(JSON.stringify({ 
+                    return new Response(JSON.stringify({
                         text: "NACHMI macht gerade eine kurze Pause. ✨ Sammle weiter Stempel!",
                         debugError: result.error,
                         debugDetails: result.details
-                    }), { 
+                    }), {
                         headers: { ...corsHeaders, "Content-Type": "application/json" }
                     });
                 }
@@ -1383,18 +1363,18 @@ Deine Aufgabe: Schreibe eine ausführliche, begeisterte Nachricht für die Infot
 
                 const apiKey = (env.KI_API || "").trim().replace(/^"|"$/g, '');
                 if (!apiKey || apiKey === "undefined" || apiKey.length < 10) {
-                    return new Response("FEHLER: Cloudflare Secret 'KI_API' fehlt! Bitte in der Cloudflare-Konsole unter 'Settings -> Variables -> Secrets' eintragen.", { 
-                        status: 401, 
-                        headers: corsHeaders 
+                    return new Response("FEHLER: Cloudflare Secret 'KI_API' fehlt! Bitte in der Cloudflare-Konsole unter 'Settings -> Variables -> Secrets' eintragen.", {
+                        status: 401,
+                        headers: corsHeaders
                     });
                 }
 
                 const result = await callGemini(prompt, apiKey, { temperature: 0.9, maxTokens: 600 });
-                
+
                 if (result.success) {
-                    return new Response(JSON.stringify({ 
-                        text: result.text, 
-                        model: result.model 
+                    return new Response(JSON.stringify({
+                        text: result.text,
+                        model: result.model
                     }), {
                         headers: { ...corsHeaders, "Content-Type": "application/json" }
                     });
@@ -1411,15 +1391,15 @@ Deine Aufgabe: Schreibe eine ausführliche, begeisterte Nachricht für die Infot
                     const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`;
                     const res = await fetch(url);
                     const data = await res.json();
-                    
+
                     // NEW: Real Generation Test with callGemini
                     const testResult = await callGemini("Hi, this is a diagnostic test.", apiKey, { maxTokens: 10 });
 
-                    return new Response(JSON.stringify({ 
+                    return new Response(JSON.stringify({
                         success: testResult.success,
                         modelUsed: testResult.model,
                         textReceived: testResult.text,
-                        availableModels: data, 
+                        availableModels: data,
                         fullDiagnostic: testResult
                     }), {
                         headers: { ...corsHeaders, "Content-Type": "application/json" }
@@ -1462,7 +1442,7 @@ Deine Aufgabe: Schreibe eine ausführliche, begeisterte Nachricht für die Infot
                 const s = students[i];
                 if (s.vip && s.vip.active && s.vip.grantedAt) {
                     const grantedDate = new Date(s.vip.grantedAt);
-                    grantedDate.setHours(0,0,0,0);
+                    grantedDate.setHours(0, 0, 0, 0);
                     const daysDiff = Math.floor((today.getTime() - grantedDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
                     const daysLeft = vipDuration - daysDiff + 1;
 
@@ -1582,16 +1562,16 @@ async function callGemini(prompt, apiKey, options = {}) {
         if (listRes.ok) {
             const data = await listRes.json();
             const models = data.models || [];
-            
+
             // Preference: flash 2.5 -> flash 2.0 -> flash 1.5 -> flash newest -> pro newer -> anything else
             const best = models.find(m => m.name.includes("gemini-2.5-flash") && m.supportedGenerationMethods.includes("generateContent")) ||
-                         models.find(m => m.name.includes("gemini-2.0-flash") && m.supportedGenerationMethods.includes("generateContent")) ||
-                         models.find(m => (m.name.includes("gemini-1.5-flash") || m.name.includes("gemini-1.5-flash-8b")) && m.supportedGenerationMethods.includes("generateContent")) ||
-                         models.find(m => m.name.includes("gemini-3.1-flash") && m.supportedGenerationMethods.includes("generateContent")) ||
-                         models.find(m => m.name.includes("flash") && m.supportedGenerationMethods.includes("generateContent")) ||
-                         models.find(m => m.name.includes("pro") && m.supportedGenerationMethods.includes("generateContent")) ||
-                         models.find(m => m.supportedGenerationMethods.includes("generateContent"));
-            
+                models.find(m => m.name.includes("gemini-2.0-flash") && m.supportedGenerationMethods.includes("generateContent")) ||
+                models.find(m => (m.name.includes("gemini-1.5-flash") || m.name.includes("gemini-1.5-flash-8b")) && m.supportedGenerationMethods.includes("generateContent")) ||
+                models.find(m => m.name.includes("gemini-3.1-flash") && m.supportedGenerationMethods.includes("generateContent")) ||
+                models.find(m => m.name.includes("flash") && m.supportedGenerationMethods.includes("generateContent")) ||
+                models.find(m => m.name.includes("pro") && m.supportedGenerationMethods.includes("generateContent")) ||
+                models.find(m => m.supportedGenerationMethods.includes("generateContent"));
+
             if (best) {
                 discoveredModel = best.name.startsWith("models/") ? best.name : `models/${best.name}`;
             }
@@ -1607,13 +1587,13 @@ async function callGemini(prompt, apiKey, options = {}) {
     let candidates = [
         "models/gemini-2.5-flash",
         "models/gemini-2.0-flash",
-        "models/gemini-1.5-flash-8b", 
-        "models/gemini-1.5-flash", 
+        "models/gemini-1.5-flash-8b",
+        "models/gemini-1.5-flash",
         "models/gemini-3.1-flash-lite-preview",
         "models/gemini-pro-latest",
         "models/gemini-flash-latest"
     ];
-    
+
     // If discovery found a model, try it FIRST (even if not in hardcoded list)
     if (discoveredModel) {
         // Remove from candidates if already there to avoid duplicates
@@ -1647,13 +1627,13 @@ async function callGemini(prompt, apiKey, options = {}) {
                     const data = await res.json();
                     const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
                     if (text) return { success: true, text: text.trim(), model: `${ver}/${modelName}` };
-                    
+
                     errors.push(`[${ver}/${modelName}] No text in response: ${JSON.stringify(data).substring(0, 100)}`);
                 } else {
                     const errTxt = await res.text();
                     errors.push(`[${ver}/${modelName}] ${res.status}: ${errTxt.substring(0, 100)}`);
                 }
-                
+
                 // If Rate Limited, wait 1s before trying NEXT model to let quota recover
                 if (res.status === 429) {
                     await new Promise(r => setTimeout(r, 1000));
@@ -1664,10 +1644,10 @@ async function callGemini(prompt, apiKey, options = {}) {
         }
     }
 
-    return { 
-        success: false, 
-        error: "Keine verfügbare KI-Kombination gefunden. Prüfe deinen API-Key und das Kontingent.", 
-        details: errors 
+    return {
+        success: false,
+        error: "Keine verfügbare KI-Kombination gefunden. Prüfe deinen API-Key und das Kontingent.",
+        details: errors
     };
 }
 
@@ -1686,7 +1666,7 @@ function buildFallbackMessage(events) {
 async function sendTelegramMessage(env, text, token = null, chatId = null) {
     const t = token || env.TELEGRAM_TOKEN;
     const cid = chatId || env.TELEGRAM_CHAT_ID;
-    
+
     if (!t || !cid) return false;
     try {
         const response = await fetch(`https://api.telegram.org/bot${t}/sendMessage`, {
@@ -1726,24 +1706,24 @@ function calculateActiveHours(lastUpdate, now, ignoreFreeze) {
     while (current < now) {
         const next = Math.min(current + step, now);
         const mid = new Date(current + (next - current) / 2);
-        
+
         const parts = formatter.formatToParts(mid);
         const d = {};
         parts.forEach(p => d[p.type] = p.value);
-        
+
         const hour = parseInt(d.hour);
         const min = parseInt(d.minute);
         const isWeekend = (d.weekday === 'Sat' || d.weekday === 'Sun');
-        
+
         // Active Window: 12:20 to 16:30 local time
         const totalMinutes = hour * 60 + min;
         const isActive = !isWeekend && totalMinutes >= (12 * 60 + 20) && totalMinutes < (16 * 60 + 30);
-        
+
         if (isActive) {
             activems += (next - current);
         }
         current = next;
     }
-    
+
     return activems / (1000 * 3600);
 }

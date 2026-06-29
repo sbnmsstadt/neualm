@@ -373,30 +373,6 @@ function renderAttendance() {
     const createStudentHTML = (s, showTimeTag = true, isComing = false) => {
         const avatar = s.avatar || s.name.charAt(0).toUpperCase();
         
-        // Map today's badge IDs to emoji and name
-        let badgeEmojis = '';
-        const todayKey = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][new Date().getDay()];
-        if (s.badges) {
-            let todayBadgeIds = [];
-            if (Array.isArray(s.badges)) {
-                const dayIndices = { mon: 0, tue: 1, wed: 2, thu: 3, fri: 4 };
-                const idx = dayIndices[todayKey];
-                if (idx !== undefined && s.badges[idx]) todayBadgeIds = [s.badges[idx]];
-            } else if (typeof s.badges === 'object') {
-                const val = s.badges[todayKey];
-                if (Array.isArray(val)) {
-                    todayBadgeIds = val;
-                } else if (val) {
-                    todayBadgeIds = [val];
-                }
-            }
-
-            badgeEmojis = todayBadgeIds.map(bid => {
-                const b = badges.find(x => String(x.id) === String(bid));
-                return b ? `<span class="attendance-badge-icon" title="${b.name}" style="background:${b.color}22; border:1px solid ${b.color}; color:${b.color}; padding: 2px 6px; border-radius: 8px; font-size: 0.75rem; font-weight: 800; display: inline-flex; align-items: center; gap: 4px; margin-left: 6px; vertical-align: middle;">${b.emoji} ${b.name}</span>` : '';
-            }).filter(Boolean).join('');
-        }
-
         const time = isComing ? (s.comingTime || '11:40') : (s.pickupTime || '15:30');
         const timeClass = time.replace(':', '');
         
@@ -444,7 +420,6 @@ function renderAttendance() {
                 <div class="attendance-avatar">${avatar}</div>
                 <div class="attendance-name">
                     <span class="attendance-name-text">${s.name.split(' ')[0]}</span>
-                    <div class="attendance-badges">${badgeEmojis}</div>
                 </div>
                 ${timeTag}
             </div>
