@@ -142,17 +142,40 @@
 
                         <div style="display:flex; flex-direction:column; gap:8px;">
                             <p style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; margin: 0;">
-                                GEHT-ZEIT:</p>
-                            <div class="pickup-toggle-container"
-                                style="display:flex; background:rgba(255,255,255,0.05); border-radius:8px; padding:2px; border:1px solid rgba(255,255,255,0.1); width: fit-content;">
-                                <button id="new-pickup-btn-1530" onclick="selectNewPickup(this, '15:30')"
-                                    class="pickup-btn active"
-                                    style="border:none; background:none; color:white; font-size:0.7rem; font-weight:800; padding:4px 10px; border-radius:6px; cursor:pointer;">15:30</button>
-                                <button id="new-pickup-btn-1630" onclick="selectNewPickup(this, '16:30')"
-                                    class="pickup-btn"
-                                    style="border:none; background:none; color:rgba(255,255,255,0.3); font-size:0.7rem; font-weight:800; padding:4px 10px; border-radius:6px; cursor:pointer;">16:30</button>
+                                KOMMT-ZEIT:</p>
+                            <div style="display:flex; gap:8px; align-items:center;">
+                                <div class="coming-toggle-container"
+                                    style="display:flex; background:rgba(255,255,255,0.05); border-radius:8px; padding:2px; border:1px solid rgba(255,255,255,0.1); width: fit-content;">
+                                    <button id="new-coming-btn-1200" type="button" onclick="selectNewComing(this, '12:00')"
+                                        class="coming-btn active"
+                                        style="border:none; background:var(--success); color:white; font-size:0.7rem; font-weight:800; padding:4px 10px; border-radius:6px; cursor:pointer;">12:00</button>
+                                    <button id="new-coming-btn-1300" type="button" onclick="selectNewComing(this, '13:00')"
+                                        class="coming-btn"
+                                        style="border:none; background:none; color:rgba(255,255,255,0.3); font-size:0.7rem; font-weight:800; padding:4px 10px; border-radius:6px; cursor:pointer;">13:00</button>
+                                </div>
+                                <span style="font-size: 0.7rem; color: var(--text-muted);">oder:</span>
+                                <input type="text" id="new-student-coming" value="12:00" placeholder="z.B. 12:00" oninput="clearNewComingButtons()"
+                                    style="width: 80px; text-align: center; padding: 4px 8px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); color: white; font-size: 0.75rem; font-weight: 700;">
                             </div>
-                            <input type="hidden" id="new-student-pickup" value="15:30">
+                        </div>
+
+                        <div style="display:flex; flex-direction:column; gap:8px;">
+                            <p style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; margin: 0;">
+                                GEHT-ZEIT:</p>
+                            <div style="display:flex; gap:8px; align-items:center;">
+                                <div class="pickup-toggle-container"
+                                    style="display:flex; background:rgba(255,255,255,0.05); border-radius:8px; padding:2px; border:1px solid rgba(255,255,255,0.1); width: fit-content;">
+                                    <button id="new-pickup-btn-1530" type="button" onclick="selectNewPickup(this, '15:30')"
+                                        class="pickup-btn active"
+                                        style="border:none; background:var(--primary); color:white; font-size:0.7rem; font-weight:800; padding:4px 10px; border-radius:6px; cursor:pointer;">15:30</button>
+                                    <button id="new-pickup-btn-1630" type="button" onclick="selectNewPickup(this, '16:30')"
+                                        class="pickup-btn"
+                                        style="border:none; background:none; color:rgba(255,255,255,0.3); font-size:0.7rem; font-weight:800; padding:4px 10px; border-radius:6px; cursor:pointer;">16:30</button>
+                                </div>
+                                <span style="font-size: 0.7rem; color: var(--text-muted);">oder:</span>
+                                <input type="text" id="new-student-pickup" value="15:30" placeholder="z.B. 15:30" oninput="clearNewPickupButtons()"
+                                    style="width: 80px; text-align: center; padding: 4px 8px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); color: white; font-size: 0.75rem; font-weight: 700;">
+                            </div>
                         </div>
 
                         <button id="add-btn" class="add-stamp-btn" style="margin-top: 5px;">Hinzufügen</button>
@@ -466,14 +489,39 @@
     <script src="logbook.js?v=1"></script>
     <script src="appointments.js?v=1"></script>
     <script>
+        function selectNewComing(btn, time) {
+            const container = btn.parentElement;
+            container.querySelectorAll('.coming-btn').forEach(b => {
+                const isActive = b === btn;
+                b.classList.toggle('active', isActive);
+                b.style.color = isActive ? 'white' : 'rgba(255,255,255,0.3)';
+                b.style.background = isActive ? 'var(--success)' : 'none';
+            });
+            document.getElementById('new-student-coming').value = time;
+        }
+        function clearNewComingButtons() {
+            document.querySelectorAll('.coming-toggle-container .coming-btn').forEach(b => {
+                b.classList.remove('active');
+                b.style.color = 'rgba(255,255,255,0.3)';
+                b.style.background = 'none';
+            });
+        }
         function selectNewPickup(btn, time) {
             const container = btn.parentElement;
             container.querySelectorAll('.pickup-btn').forEach(b => {
                 const isActive = b === btn;
                 b.classList.toggle('active', isActive);
                 b.style.color = isActive ? 'white' : 'rgba(255,255,255,0.3)';
+                b.style.background = isActive ? 'var(--primary)' : 'none';
             });
             document.getElementById('new-student-pickup').value = time;
+        }
+        function clearNewPickupButtons() {
+            document.querySelectorAll('.pickup-toggle-container .pickup-btn').forEach(b => {
+                b.classList.remove('active');
+                b.style.color = 'rgba(255,255,255,0.3)';
+                b.style.background = 'none';
+            });
         }
     </script>
 </body>

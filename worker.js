@@ -685,7 +685,7 @@ export default {
             }
 
             if (path === "/api/students" && method === "POST") {
-                const { name, birthday, attendance, pickupTime } = await request.json();
+                const { name, birthday, attendance, pickupTime, comingTime } = await request.json();
                 const studentsRaw = await getKV("students");
                 let students = studentsRaw ? JSON.parse(studentsRaw) : [];
 
@@ -712,7 +712,8 @@ export default {
                     history: [],
                     redemptions: {},
                     attendance: attendance || { mon: false, tue: false, wed: false, thu: false, fri: false },
-                    pickupTime: pickupTime || "15:30"
+                    pickupTime: pickupTime || "15:30",
+                    comingTime: comingTime || "12:00"
                 };
                 students.push(newStudent);
                 await putKV("students", JSON.stringify(students));
@@ -730,7 +731,7 @@ export default {
                 if (pathParts.length === 4) {
                     const id = pathParts[3];
                     const body = await request.json();
-                    const { stamps, avatar, badges, reason, attendance, pickupTime } = body;
+                    const { stamps, avatar, badges, reason, attendance, pickupTime, comingTime } = body;
                     const studentsRaw = await getKV("students");
                     let students = JSON.parse(studentsRaw || "[]");
 
@@ -747,6 +748,9 @@ export default {
                     if (students[index].pickupTime === undefined) {
                         students[index].pickupTime = "15:30";
                     }
+                    if (students[index].comingTime === undefined) {
+                        students[index].comingTime = "12:00";
+                    }
 
                     if (stamps !== undefined) {
                         // If stamps increased, track history
@@ -761,6 +765,7 @@ export default {
                     }
                     if (avatar !== undefined) students[index].avatar = avatar;
                     if (pickupTime !== undefined) students[index].pickupTime = pickupTime;
+                    if (comingTime !== undefined) students[index].comingTime = comingTime;
                     if (attendance !== undefined) {
                         students[index].attendance = { 
                             ...students[index].attendance, 

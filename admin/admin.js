@@ -869,17 +869,31 @@ function renderAdminList(filter = "") {
                 </div>
                 <!-- Compact Attendance Chips -->
                 <div class="attendance-chips-container" style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">
-                    <div style="display:flex; gap:4px;">
+                    <!-- Weekdays Row -->
+                    <div style="display:flex; gap:4px; margin-bottom: 2px;">
                         ${['mon', 'tue', 'wed', 'thu', 'fri'].map(day => {
                             const active = student.attendance && student.attendance[day];
                             const chars = { mon:'M', tue:'D', wed:'M', thu:'D', fri:'F' };
                             return `<div class="attendance-chip ${active ? 'active' : ''}" onclick="event.stopPropagation(); toggleAttendance('${student.id}', '${day}', ${active})" title="${day.toUpperCase()}">${chars[day]}</div>`;
                         }).join('')}
                     </div>
-                    <!-- Pickup Time Toggle -->
-                    <div class="pickup-toggle-container" style="display:flex; background:rgba(255,255,255,0.05); border-radius:8px; padding:2px; border:1px solid rgba(255,255,255,0.1);">
-                        <button onclick="updatePickupTime('${student.id}', '15:30')" class="pickup-btn ${student.pickupTime === '15:30' ? 'active' : ''}" style="border:none; background:none; color:${student.pickupTime === '15:30' ? 'white' : 'rgba(255,255,255,0.3)'}; font-size:0.6rem; font-weight:800; padding:2px 6px; border-radius:6px; cursor:pointer;">15:30</button>
-                        <button onclick="updatePickupTime('${student.id}', '16:30')" class="pickup-btn ${student.pickupTime === '16:30' ? 'active' : ''}" style="border:none; background:none; color:${student.pickupTime === '16:30' ? 'white' : 'rgba(255,255,255,0.3)'}; font-size:0.6rem; font-weight:800; padding:2px 6px; border-radius:6px; cursor:pointer;">16:30</button>
+                    <!-- Kommen Row -->
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <span style="font-size:0.6rem; color:var(--success); font-weight:800; letter-spacing:0.05em; opacity:0.85; width:45px; text-align:right;">KOMMEN:</span>
+                        <div class="coming-toggle-container" style="display:flex; background:rgba(255,255,255,0.05); border-radius:8px; padding:2px; border:1px solid rgba(255,255,255,0.1);">
+                            <button onclick="updateComingTime('${student.id}', '12:00')" class="coming-btn ${student.comingTime === '12:00' ? 'active' : ''}" style="border:none; background:${student.comingTime === '12:00' ? 'var(--success)' : 'none'}; color:${student.comingTime === '12:00' ? 'white' : 'rgba(255,255,255,0.3)'}; font-size:0.6rem; font-weight:800; padding:2px 6px; border-radius:6px; cursor:pointer;">12:00</button>
+                            <button onclick="updateComingTime('${student.id}', '13:00')" class="coming-btn ${student.comingTime === '13:00' ? 'active' : ''}" style="border:none; background:${student.comingTime === '13:00' ? 'var(--success)' : 'none'}; color:${student.comingTime === '13:00' ? 'white' : 'rgba(255,255,255,0.3)'}; font-size:0.6rem; font-weight:800; padding:2px 6px; border-radius:6px; cursor:pointer;">13:00</button>
+                        </div>
+                        <input type="text" class="admin-coming-input" value="${student.comingTime || '12:00'}" onchange="updateComingTime('${student.id}', this.value)" style="width:48px; text-align:center; padding:2px; border-radius:6px; border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.05); color:white; font-size:0.65rem; font-weight:800;" placeholder="12:00">
+                    </div>
+                    <!-- Gehen Row -->
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <span style="font-size:0.6rem; color:var(--primary-light); font-weight:800; letter-spacing:0.05em; opacity:0.85; width:45px; text-align:right;">GEHEN:</span>
+                        <div class="pickup-toggle-container" style="display:flex; background:rgba(255,255,255,0.05); border-radius:8px; padding:2px; border:1px solid rgba(255,255,255,0.1);">
+                            <button onclick="updatePickupTime('${student.id}', '15:30')" class="pickup-btn ${student.pickupTime === '15:30' ? 'active' : ''}" style="border:none; background:${student.pickupTime === '15:30' ? 'var(--primary)' : 'none'}; color:${student.pickupTime === '15:30' ? 'white' : 'rgba(255,255,255,0.3)'}; font-size:0.6rem; font-weight:800; padding:2px 6px; border-radius:6px; cursor:pointer;">15:30</button>
+                            <button onclick="updatePickupTime('${student.id}', '16:30')" class="pickup-btn ${student.pickupTime === '16:30' ? 'active' : ''}" style="border:none; background:${student.pickupTime === '16:30' ? 'var(--primary)' : 'none'}; color:${student.pickupTime === '16:30' ? 'white' : 'rgba(255,255,255,0.3)'}; font-size:0.6rem; font-weight:800; padding:2px 6px; border-radius:6px; cursor:pointer;">16:30</button>
+                        </div>
+                        <input type="text" class="admin-pickup-input" value="${student.pickupTime || '15:30'}" onchange="updatePickupTime('${student.id}', this.value)" style="width:48px; text-align:center; padding:2px; border-radius:6px; border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.05); color:white; font-size:0.65rem; font-weight:800;" placeholder="15:30">
                     </div>
                 </div>
             </div>
@@ -954,11 +968,13 @@ async function createNewStudent() {
     const nameInput = document.getElementById('new-student-name');
     const birthdayInput = document.getElementById('new-student-birthday');
     const pickupInput = document.getElementById('new-student-pickup');
+    const comingInput = document.getElementById('new-student-coming');
     
     const name = nameInput.value.trim();
     const birthday = birthdayInput.value;
     const pickupTime = pickupInput.value;
-    
+    const comingTime = comingInput ? comingInput.value : "12:00";
+
     // Collect attendance from chips
     const attendance = {};
     document.querySelectorAll('.new-student-chip').forEach(chip => {
@@ -974,7 +990,7 @@ async function createNewStudent() {
         const response = await fetch(`${API_URL}/students`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, birthday, attendance, pickupTime })
+            body: JSON.stringify({ name, birthday, attendance, pickupTime, comingTime })
         });
 
         if (response.ok) {
@@ -983,6 +999,21 @@ async function createNewStudent() {
             birthdayInput.value = '';
             document.querySelectorAll('.new-student-chip').forEach(chip => chip.classList.remove('active'));
             
+            // Reset coming selection UI
+            if (comingInput) {
+                comingInput.value = '12:00';
+            }
+            const btn1200 = document.getElementById('new-coming-btn-1200');
+            const btn1300 = document.getElementById('new-coming-btn-1300');
+            if (btn1200 && btn1300) {
+                btn1200.classList.add('active');
+                btn1200.style.color = 'white';
+                btn1200.style.background = 'var(--success)';
+                btn1300.classList.remove('active');
+                btn1300.style.color = 'rgba(255,255,255,0.3)';
+                btn1300.style.background = 'none';
+            }
+
             // Reset pickup selection UI
             pickupInput.value = '15:30';
             const btn1530 = document.getElementById('new-pickup-btn-1530');
@@ -990,8 +1021,10 @@ async function createNewStudent() {
             if (btn1530 && btn1630) {
                 btn1530.classList.add('active');
                 btn1530.style.color = 'white';
+                btn1530.style.background = 'var(--primary)';
                 btn1630.classList.remove('active');
                 btn1630.style.color = 'rgba(255,255,255,0.3)';
+                btn1630.style.background = 'none';
             }
 
             fetchStudents();
@@ -1060,6 +1093,41 @@ async function updateAttendance(id, day, val) {
     }
 }
 
+async function updateComingTime(id, time) {
+    try {
+        await fetch(`${API_URL}/students/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ comingTime: time })
+        });
+        
+        // Update local memory and UI instant feedback
+        const s = window.students.find(x => x.id === id);
+        if (s) {
+            s.comingTime = time;
+        }
+
+        // Silent UI update: find the card and update both buttons and the text input
+        const container = document.getElementById('admin-student-list');
+        const card = Array.from(container.children).find(el => el.innerHTML.includes(id));
+        if (card) {
+            const btns = card.querySelectorAll('.coming-btn');
+            btns.forEach(btn => {
+                const isActive = btn.innerText === time;
+                btn.classList.toggle('active', isActive);
+                btn.style.color = isActive ? 'white' : 'rgba(255,255,255,0.3)';
+                btn.style.background = isActive ? 'var(--success)' : 'none';
+            });
+            const input = card.querySelector('.admin-coming-input');
+            if (input) {
+                input.value = time;
+            }
+        }
+    } catch (err) {
+        console.error("Coming update error:", err);
+    }
+}
+
 async function updatePickupTime(id, time) {
     try {
         await fetch(`${API_URL}/students/${id}`, {
@@ -1074,7 +1142,7 @@ async function updatePickupTime(id, time) {
             s.pickupTime = time;
         }
 
-        // Silent UI update: find the card and toggle active class on buttons
+        // Silent UI update: find the card and update both buttons and the text input
         const container = document.getElementById('admin-student-list');
         const card = Array.from(container.children).find(el => el.innerHTML.includes(id));
         if (card) {
@@ -1083,8 +1151,12 @@ async function updatePickupTime(id, time) {
                 const isActive = btn.innerText === time;
                 btn.classList.toggle('active', isActive);
                 btn.style.color = isActive ? 'white' : 'rgba(255,255,255,0.3)';
-                if (isActive) btn.parentElement.querySelector('.active')?.classList.remove('active');
+                btn.style.background = isActive ? 'var(--primary)' : 'none';
             });
+            const input = card.querySelector('.admin-pickup-input');
+            if (input) {
+                input.value = time;
+            }
         }
     } catch (err) {
         console.error("Pickup update error:", err);

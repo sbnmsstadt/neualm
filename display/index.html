@@ -1207,7 +1207,7 @@
         /* Attendance List Styles */
         .attendance-content {
             display: block; /* Required for columns */
-            columns: 1;
+            columns: 2;
             column-gap: 20px;
             padding: 5px 15px;
             height: 100%;
@@ -1654,57 +1654,28 @@
 
             <!-- Side-by-Side row (Hauptfokus) -->
             <div id="main-focus-row" style="display: flex; gap: 18px; flex: 1.8;">
-                <!-- Linke Spalte: Projekte oben, Tagesplan unten -->
-                <div style="flex: 1.5; display: flex; flex-direction: column; gap: 18px;">
-                    <!-- Aktuelle Projekte -->
-                    <div class="card projects-card" style="flex: 0.8;">
-                        <div class="card-header">
-                            <div class="card-icon">🚀</div>
-                            <div class="card-title">AKTUELLE PROJEKTE</div>
-                        </div>
-                        <div class="card-content">
-                            <div id="projects-list" class="projects-content">
-                                Lade Projekte...
-                            </div>
-                        </div>
+                <!-- Linke Spalte: KOMMEN -->
+                <div class="card kommen-card" style="flex: 1; display: flex; flex-direction: column;">
+                    <div class="card-header">
+                        <div class="card-icon">📥</div>
+                        <div class="card-title">KOMMEN</div>
                     </div>
-                    
-                    <!-- Tagesplan (Static) -->
-                    <div class="card tagesplan-card" style="flex: 1.3;">
-                        <div class="card-header">
-                            <div class="card-icon">📅</div>
-                            <div class="card-title">TAGESPLAN</div>
-                        </div>
-                        <div class="card-content" style="padding:0; margin-top:8px; overflow:auto;">
-                            <div id="today-plan-list" class="today-plan-content">
-                                Lade Plan...
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Kommende Projekte (Verschoben in die linke Spalte) -->
-                    <div class="card upcoming-projects-card" style="flex: 0.6; padding: 12px 18px;">
-                        <div class="card-header" style="padding-bottom: 8px; border-bottom: 1px solid rgba(16, 185, 129, 0.1); margin-bottom: 5px;">
-                            <div class="card-icon" style="font-size: 1.1rem;">🔜</div>
-                            <div class="card-title" style="color: var(--success); font-size: 0.85rem;">KOMMENDE PROJEKTE</div>
-                        </div>
-                        <div class="card-content" style="font-size: 0.75rem;">
-                            <div id="upcoming-projects-list" class="projects-content">
-                                Lade kommende Projekte...
-                            </div>
+                    <div class="card-content" style="flex: 1; padding: 10px 0; overflow: hidden;">
+                        <div id="kommen-list" class="attendance-content">
+                            Keiner da? 🤔
                         </div>
                     </div>
                 </div>
 
-                <!-- Rechte Spalte: HEUTE DA! -->
-                <div class="card attendance-card" style="flex: 0.65; display: flex; flex-direction: column;">
+                <!-- Rechte Spalte: GEHEN -->
+                <div class="card gehen-card" style="flex: 1; display: flex; flex-direction: column;">
                     <div class="card-header">
-                        <div class="card-icon">👥</div>
-                        <div class="card-title">HEUTE DA!</div>
+                        <div class="card-icon">🏠</div>
+                        <div class="card-title">GEHEN</div>
                     </div>
                     <div class="card-content" style="flex: 1; padding: 10px 0; overflow: hidden;">
-                        <div id="attendance-list" class="attendance-content">
-                            Keiner da? 🤔
+                        <div id="gehen-list" class="attendance-content">
+                            Keiner geht? 🤔
                         </div>
                     </div>
                 </div>

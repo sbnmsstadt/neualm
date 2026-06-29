@@ -341,29 +341,37 @@ function renderStudentOfWeek() {
     `;
 }
 function renderAttendance() {
-    const list = document.getElementById('attendance-list');
-    if (!list) return;
+    const kommenList = document.getElementById('kommen-list');
+    const gehenList = document.getElementById('gehen-list');
+    if (!kommenList || !gehenList) return;
 
     const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
     const todayIndex = new Date().getDay();
     const todayKey = days[todayIndex];
 
-    // Temporarily disabled for testing (Weekend support)
-    /*
-    if (todayIndex === 0 || todayIndex === 6) {
-        smoothUpdate(list, `<div class="empty-state">Wochenende! 🍿</div>`);
-        return;
-    }
-    */
-
     const presentStudents = students.filter(s => s.attendance && s.attendance[todayKey]);
 
     if (presentStudents.length === 0) {
-        smoothUpdate(list, `<div class="empty-state">Heute ist noch keiner da. 🤔</div>`);
+        smoothUpdate(kommenList, `<div class="empty-state">Heute ist noch keiner da. 🤔</div>`);
+        smoothUpdate(gehenList, `<div class="empty-state">Heute geht noch keiner. 🍿</div>`);
         return;
     }
 
-    const html = presentStudents.map(s => {
+    // Sort by comingTime for Kommen
+    const sortedKommen = [...presentStudents].sort((a, b) => {
+        const timeA = a.comingTime || '12:00';
+        const timeB = b.comingTime || '12:00';
+        return timeA.localeCompare(timeB) || a.name.localeCompare(b.name);
+    });
+
+    // Sort by pickupTime for Gehen
+    const sortedGehen = [...presentStudents].sort((a, b) => {
+        const timeA = a.pickupTime || '15:30';
+        const timeB = b.pickupTime || '15:30';
+        return timeA.localeCompare(timeB) || a.name.localeCompare(b.name);
+    });
+
+    const createStudentHTML = (s, showTimeTag = true, isComing = false) => {
         const avatar = s.avatar || s.name.charAt(0).toUpperCase();
         
         // Map badge IDs to emojis
@@ -372,20 +380,56 @@ function renderAttendance() {
             return b ? `<span class="attendance-badge-icon" title="${b.name}">${b.emoji}</span>` : '';
         }).join('');
 
-        const timeClass = (s.pickupTime || '15:30').replace(':', '');
+        const time = isComing ? (s.comingTime || '12:00') : (s.pickupTime || '15:30');
+        const timeClass = time.replace(':', '');
+        
+        let color = '';
+        let tagStyle = '';
+        
+        if (isComing) {
+            if (timeClass === '1200') {
+                color = '#10b981'; // Green
+                tagStyle = 'color: #10b981; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.15);';
+            } else if (timeClass === '1300') {
+                color = '#06b6d4'; // Teal
+                tagStyle = 'color: #06b6d4; background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.15);';
+            } else {
+                color = '#ec4899'; // Pink (Custom)
+                tagStyle = 'color: #ec4899; background: rgba(236, 72, 153, 0.12); border: 1px solid rgba(236, 72, 153, 0.25);';
+            }
+        } else {
+            if (timeClass === '1530') {
+                color = '#3b82f6'; // Blue
+                tagStyle = 'color: #3b82f6; background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.15);';
+            } else if (timeClass === '1630') {
+                color = '#f59e0b'; // Orange/Amber
+                tagStyle = 'color: #f59e0b; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.15);';
+            } else {
+                color = '#a78bfa'; // Purple (Custom)
+                tagStyle = 'color: #a78bfa; background: rgba(167, 139, 250, 0.12); border: 1px solid rgba(167, 139, 250, 0.25);';
+            }
+        }
+
+        const timeTag = showTimeTag ? `<span class="attendance-time-tag time-${timeClass}" style="${tagStyle}">${time}</span>` : '';
+        const itemStyle = `border-left: 4px solid ${color};`;
+
         return `
-            <div class="attendance-item">
+            <div class="attendance-item" style="${itemStyle}">
                 <div class="attendance-avatar">${avatar}</div>
                 <div class="attendance-name">
                     <span class="attendance-name-text">${s.name.split(' ')[0]}</span>
                     <div class="attendance-badges">${badgeEmojis}</div>
                 </div>
-                <span class="attendance-time-tag time-${timeClass}">${s.pickupTime || '15:30'}</span>
+                ${timeTag}
             </div>
         `;
-    }).join('');
+    };
 
-    smoothUpdate(list, html);
+    const kommenHTML = sortedKommen.map(s => createStudentHTML(s, true, true)).join('');
+    const gehenHTML = sortedGehen.map(s => createStudentHTML(s, true, false)).join('');
+
+    smoothUpdate(kommenList, kommenHTML);
+    smoothUpdate(gehenList, gehenHTML);
 }
 
 // ── BADGE GALLERY (Motivation) ─────────────────
