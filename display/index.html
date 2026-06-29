@@ -1596,6 +1596,23 @@
                 </div>
             </div>
 
+            <!-- Lernzeit & Betreuung -->
+            <div class="card lernzeit-card" id="lernzeit-card" style="border-color: rgba(59, 130, 246, 0.3); background: rgba(59, 130, 246, 0.03); flex: 0 0 auto; padding: 12px 18px;">
+                <div class="card-header" style="padding-bottom: 8px; border-bottom: 1px solid rgba(59, 130, 246, 0.1); margin-bottom: 5px;">
+                    <div class="card-icon" style="font-size: 1.1rem;">✏️</div>
+                    <div class="card-title" style="color: #60a5fa; font-size: 0.85rem;">Lernzeit & Betreuung</div>
+                </div>
+                <div class="card-content" style="display: flex; flex-direction: column; justify-content: center; gap: 4px; padding: 5px 0;">
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <span style="font-size: 2rem; animation: badgeFloat 3s ease-in-out infinite; flex-shrink: 0; width: 50px; text-align: center;">🧑‍🏫</span>
+                        <div style="display: flex; flex-direction: column; min-width: 0;">
+                            <div id="lernzeit-lehrer" style="font-size: 1.1rem; font-weight: 900; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Lade...</div>
+                            <div id="lernzeit-uhrzeit" style="font-size: 0.78rem; font-weight: 600; color: #60a5fa; font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">14:30 - 15:20 Uhr</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Schüler der Woche -->
             <div class="card sotw-card" id="sotw-card" style="display:none;">
                 <div class="card-header">
@@ -1609,11 +1626,11 @@
                 </div>
             </div>
 
-            <!-- NEU: Abzeichen-Galerie (Motivation) -->
+            <!-- NEU: Unterrichts-Galerie (Motivation) -->
             <div class="card badge-galerie-card" id="badge-galerie-card" style="border-color: rgba(139, 92, 246, 0.3); background: rgba(139, 92, 246, 0.03); flex: 0 0 auto; padding: 12px 18px;">
                 <div class="card-header" style="padding-bottom: 8px; border-bottom: 1px solid rgba(139, 92, 246, 0.1); margin-bottom: 5px;">
-                    <div class="card-icon" style="font-size: 1.1rem;">🏅</div>
-                    <div class="card-title" style="color: #a78bfa; font-size: 0.85rem;">ABZEICHEN-POWER</div>
+                    <div class="card-icon" style="font-size: 1.1rem;">📚</div>
+                    <div class="card-title" style="color: #a78bfa; font-size: 0.85rem;">UNTERRICHTS-EINHEITEN</div>
                 </div>
                 <div class="card-content" id="badge-galerie-content" style="display: flex; flex-direction: row; align-items: center; justify-content: space-between; text-align: left; gap: 15px; padding: 5px 0;">
                     <!-- Dieser Teil wird per JS ausgefadet -->
@@ -1626,7 +1643,7 @@
                     </div>
                     <!-- Dieser Teil bleibt KONSTANT und glüht -->
                     <div style="flex-shrink: 0; background: rgba(139, 92, 246, 0.15); border: 1px solid rgba(139, 92, 246, 0.4); padding: 5px 12px; border-radius: 20px; box-shadow: 0 0 15px rgba(139, 92, 246, 0.3); animation: badgeGlow 2s ease-in-out infinite alternate; margin-right: 15px;">
-                        <div style="font-size: 0.65rem; font-weight: 900; color: white; text-transform: uppercase; letter-spacing: 0.05em; line-height: 1.1; text-align: center;">Hol dir dein<br>Abzeichen!</div>
+                        <div style="font-size: 0.65rem; font-weight: 900; color: white; text-transform: uppercase; letter-spacing: 0.05em; line-height: 1.1; text-align: center;">Mach aktiv<br>mit!</div>
                     </div>
                 </div>
             </div>

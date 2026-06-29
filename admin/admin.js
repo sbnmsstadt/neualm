@@ -825,7 +825,7 @@ function renderAdminList(filter = "") {
                         data-student="${student.id}" 
                         data-badge="${b.id}"
                         class="badge-chip-btn active"
-                        title="Abzeichen entfernen: ${b.name}"
+                        title="Einheit abwählen: ${b.name}"
                         style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:0.72rem;font-weight:700;cursor:pointer;transition:all 0.2s;border:1px solid ${b.color};background:${b.color}33;color:${b.color}; shadow: 0 4px 10px ${b.color}22;">
                         ${b.emoji} ${b.name}
                     </button>`).join('');
@@ -838,7 +838,7 @@ function renderAdminList(filter = "") {
                         data-student="${student.id}" 
                         data-badge="${b.id}"
                         class="badge-chip-btn"
-                        title="Abzeichen hinzufügen: ${b.name}"
+                        title="Einheit zuweisen: ${b.name}"
                         style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:0.72rem;font-weight:700;cursor:pointer;transition:all 0.2s;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.4);">
                         ${b.emoji} ${b.name}
                     </button>`).join('');
@@ -852,9 +852,9 @@ function renderAdminList(filter = "") {
                         ">＋</button>
                     </div>
                     <div class="badge-picker-extra hidden" style="margin-top:10px; padding:10px; background:rgba(0,0,0,0.2); border-radius:14px; border:1px solid rgba(255,255,255,0.05); animation: fadeIn 0.3s ease-out;">
-                        <div style="font-size:0.65rem; color:var(--text-muted); font-weight:900; margin-bottom:8px; opacity:0.8; letter-spacing:0.05em;">VERFÜGBARE ABZEICHEN:</div>
+                        <div style="font-size:0.65rem; color:var(--text-muted); font-weight:900; margin-bottom:8px; opacity:0.8; letter-spacing:0.05em;">VERFÜGBARE EINHEITEN:</div>
                         <div style="display:flex; flex-wrap:wrap; gap:6px;">
-                            ${unassignedChips || '<span style="font-size:0.7rem; color:rgba(255,255,255,0.2);">Alle Abzeichen bereits vergeben.</span>'}
+                            ${unassignedChips || '<span style="font-size:0.7rem; color:rgba(255,255,255,0.2);">Alle Einheiten bereits zugewiesen.</span>'}
                         </div>
                     </div>
                 </div>`;
@@ -1231,6 +1231,8 @@ async function loadSettings() {
             updateField('setting-current-projects', settings.currentProjects || "");
             updateField('setting-upcoming-projects', settings.upcomingProjects || "");
             updateField('setting-today-plan', settings.todayPlan || "");
+            updateField('setting-lernzeit-time', settings.lernzeitTime || "14:30 bis 15:20");
+            renderLernzeitTeachers(settings.lernzeitTeachers || []);
 
             renderSotwCurrent();
             updateTamagotchiAdmin(settings.tamagotchi);
@@ -1309,6 +1311,7 @@ async function saveSettings() {
             currentProjects: currentProjects,
             upcomingProjects: upcomingProjects,
             todayPlan: todayPlan,
+            lernzeitTime: document.getElementById('setting-lernzeit-time')?.value || "14:30 bis 15:20",
             groupReward: {
                 ...(currentSettings?.groupReward || { current: 0, icon: "🎬" }),
                 title: groupTitle,
@@ -1372,7 +1375,7 @@ function renderBadgeList() {
     const el = document.getElementById('badge-list');
     if (!el) return;
     if (allBadges.length === 0) {
-        el.innerHTML = '<span style="color:var(--text-muted);font-size:0.8rem;">Noch keine Abzeichen erstellt.</span>';
+        el.innerHTML = '<span style="color:var(--text-muted);font-size:0.8rem;">Noch keine Unterrichtseinheiten erstellt.</span>';
         return;
     }
     el.innerHTML = allBadges.map(b => `
@@ -1411,7 +1414,7 @@ async function createBadge() {
 }
 
 async function deleteBadge(id) {
-    if (!confirm('Abzeichen wirklich löschen?')) return;
+    if (!confirm('Unterrichtseinheit wirklich löschen?')) return;
     await fetch(`${API_URL}/badges/${id}`, { method: 'DELETE' });
     await fetchBadges();
 }
@@ -1487,4 +1490,100 @@ async function clearStudentOfWeek() {
     document.getElementById('sotw-student-select').value = '';
     document.getElementById('sotw-reason').value = '';
     document.getElementById('sotw-current').style.display = 'none';
+}
+
+// --- Lernzeit & Betreuer Helpers ---
+function renderLernzeitTeachers(teachers) {
+    const list = document.getElementById('lernzeit-teachers-list');
+    if (!list) return;
+    list.innerHTML = '';
+    
+    if (teachers.length === 0) {
+        list.innerHTML = '<div style="color:var(--text-muted); font-size:0.8rem; font-style:italic;">Keine Lehrer angelegt.</div>';
+        return;
+    }
+    
+    teachers.forEach(t => {
+        const row = document.createElement('div');
+        row.style.cssText = "display:flex; flex-direction:column; gap:6px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:10px;";
+        
+        const days = t.days || { mon: false, tue: false, wed: false, thu: false, fri: false };
+        
+        const makeDayBtn = (dayKey, label) => {
+            const active = !!days[dayKey];
+            const btnBg = active ? "#3b82f6" : "rgba(255,255,255,0.05)";
+            const btnColor = active ? "white" : "rgba(255,255,255,0.4)";
+            const btnBorder = active ? "1px solid #3b82f6" : "1px solid rgba(255,255,255,0.15)";
+            return `<button onclick="toggleTeacherDay('${t.id}', '${dayKey}')" style="padding:4px 8px; font-size:0.75rem; font-weight:bold; border-radius:6px; background:${btnBg}; color:${btnColor}; border:${btnBorder}; cursor:pointer; transition:all 0.2s;">${label}</button>`;
+        };
+        
+        row.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-weight:700; font-size:0.85rem; color:white;">${t.name}</span>
+                <button onclick="deleteLernzeitTeacher('${t.id}')" style="background:transparent; border:none; color:#ef4444; cursor:pointer; font-size:0.9rem; padding:0 4px;">✕</button>
+            </div>
+            <div style="display:flex; gap:6px; margin-top:4px;">
+                ${makeDayBtn('mon', 'Mo')}
+                ${makeDayBtn('tue', 'Di')}
+                ${makeDayBtn('wed', 'Mi')}
+                ${makeDayBtn('thu', 'Do')}
+                ${makeDayBtn('fri', 'Fr')}
+            </div>
+        `;
+        list.appendChild(row);
+    });
+}
+
+function addLernzeitTeacher() {
+    const input = document.getElementById('new-teacher-name');
+    const name = input.value.trim();
+    if (!name) return;
+    
+    if (!currentSettings.lernzeitTeachers) {
+        currentSettings.lernzeitTeachers = [];
+    }
+    
+    currentSettings.lernzeitTeachers.push({
+        id: Date.now().toString(),
+        name: name,
+        days: { mon: false, tue: false, wed: false, thu: false, fri: false }
+    });
+    
+    input.value = '';
+    saveLernzeitSettings();
+}
+
+function deleteLernzeitTeacher(id) {
+    if (!confirm("Lehrer wirklich löschen?")) return;
+    currentSettings.lernzeitTeachers = (currentSettings.lernzeitTeachers || []).filter(t => String(t.id) !== String(id));
+    saveLernzeitSettings();
+}
+
+function toggleTeacherDay(teacherId, day) {
+    const teacher = currentSettings.lernzeitTeachers.find(t => String(t.id) === String(teacherId));
+    if (teacher) {
+        if (!teacher.days) {
+            teacher.days = { mon: false, tue: false, wed: false, thu: false, fri: false };
+        }
+        teacher.days[day] = !teacher.days[day];
+        saveLernzeitSettings();
+    }
+}
+
+async function saveLernzeitSettings() {
+    const timeVal = document.getElementById('setting-lernzeit-time').value;
+    currentSettings.lernzeitTime = timeVal;
+    
+    try {
+        const response = await fetch(`${API_URL}/settings`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(currentSettings)
+        });
+        if (response.ok) {
+            renderLernzeitTeachers(currentSettings.lernzeitTeachers || []);
+        }
+    } catch (err) {
+        console.error("Fehler beim Speichern der Lernzeit-Einstellungen:", err);
+    }
 }

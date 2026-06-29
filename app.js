@@ -1133,7 +1133,7 @@ async function openBadgeInfo() {
     const grid = document.getElementById('all-badges-grid');
     if (!overlay || !grid) return;
 
-    grid.innerHTML = '<div style="text-align:center; padding: 20px; opacity:0.6;">Suche Abzeichen... ✨</div>';
+    grid.innerHTML = '<div style="text-align:center; padding: 20px; opacity:0.6;">Suche Unterrichtseinheiten... ✨</div>';
     overlay.classList.add('active');
 
     try {
@@ -1155,14 +1155,14 @@ async function openBadgeInfo() {
                         <p>${b.description || 'Sammle weiter Stempel!'}</p>
                     </div>
                     <div class="badge-status-tag ${isEarned ? 'earned' : 'locked'}">
-                        ${isEarned ? '✅ Erreicht' : '🔒 Noch offen'}
+                        ${isEarned ? '✅ Belegt' : '🔒 Nicht belegt'}
                     </div>
                 </div>
             `;
         }).join('');
     } catch (e) {
         console.error("Badge Load Error:", e);
-        grid.innerHTML = '<div style="text-align:center; padding: 20px; color: #ef4444;">Abzeichen konnten nicht geladen werden.</div>';
+        grid.innerHTML = '<div style="text-align:center; padding: 20px; color: #ef4444;">Unterrichtseinheiten konnten nicht geladen werden.</div>';
     }
 }
 

@@ -410,6 +410,13 @@ export default {
                     };
                 }
 
+                if (!settings.lernzeitTime) {
+                    settings.lernzeitTime = "14:30 bis 15:20";
+                }
+                if (!settings.lernzeitTeachers) {
+                    settings.lernzeitTeachers = [];
+                }
+
                 // IMPORTANT: If decay happened (stats changed or poop generated), SAVE to DB!
                 // This prevents "flickering" or items disappearing between polls.
                 if (applyTamagotchiDecay(settings, Date.now())) {
@@ -592,8 +599,8 @@ export default {
                 let badges = badgesRaw ? JSON.parse(badgesRaw) : [];
                 const newBadge = {
                     id: Date.now().toString(),
-                    emoji: body.emoji || "🏅",
-                    name: body.name || "Abzeichen",
+                    emoji: body.emoji || "📚",
+                    name: body.name || "Unterrichtseinheit",
                     description: body.description || "",
                     color: body.color || "#f59e0b"
                 };
@@ -640,8 +647,8 @@ export default {
                 if (newlyAdded.length > 0) {
                     newlyAdded.forEach(badgeId => {
                         const badgeDef = allBadges.find(b => String(b.id) === String(badgeId));
-                        const label = badgeDef ? `${badgeDef.emoji} Abzeichen "${badgeDef.name}" erhalten!` : "🏅 Abzeichen erhalten!";
-                        students[idx].history.push({ date: today, reason: label, emoji: badgeDef?.emoji || "🏅" });
+                        const label = badgeDef ? `${badgeDef.emoji} Fach "${badgeDef.name}" belegt!` : "📚 Fach belegt!";
+                        students[idx].history.push({ date: today, reason: label, emoji: badgeDef?.emoji || "📚" });
                     });
                 }
 
@@ -650,7 +657,7 @@ export default {
                     newlyRemoved.forEach(badgeId => {
                         const badgeDef = allBadges.find(b => String(b.id) === String(badgeId));
                         if (badgeDef) {
-                            const labelDetail = `Abzeichen "${badgeDef.name}" erhalten!`;
+                            const labelDetail = `Fach "${badgeDef.name}" belegt!`;
                             students[idx].history = students[idx].history.filter(h => !h.reason.includes(labelDetail));
                         }
                     });
@@ -786,15 +793,15 @@ export default {
                             if (added.length > 0) {
                                 added.forEach(bid => {
                                     const bDef = allBadges.find(b => String(b.id) === String(bid));
-                                    const label = bDef ? `${bDef.emoji} Abzeichen "${bDef.name}" erhalten!` : "🏅 Abzeichen erhalten!";
-                                    students[index].history.push({ date: today, reason: label, emoji: bDef?.emoji || "🏅" });
+                                    const label = bDef ? `${bDef.emoji} Fach "${bDef.name}" belegt!` : "📚 Fach belegt!";
+                                    students[index].history.push({ date: today, reason: label, emoji: bDef?.emoji || "📚" });
                                 });
                             }
                             if (removed.length > 0) {
                                 removed.forEach(bid => {
                                     const bDef = allBadges.find(b => String(b.id) === String(bid));
                                     if (bDef) {
-                                        const pattern = `Abzeichen "${bDef.name}" erhalten!`;
+                                        const pattern = `Fach "${bDef.name}" belegt!`;
                                         students[index].history = students[index].history.filter(h => !h.reason.includes(pattern));
                                     }
                                 });
@@ -1661,7 +1668,7 @@ Hier ist die Liste ALLER Kinder im Hort: ${studentsWithBadges}.
 
 Deine Aufgabe: Schreibe eine ausführliche, begeisterte Nachricht für die Infotafel (ca. 50-70 Wörter):
 1. Analysiere den GESAMTEN Tagesplan und nenne mindestens DREI Aktivitäten daraus.
-2. Nenne mindestens 3-4 Kinder namentlich aus der Liste oben und beziehe dich auf ihre Abzeichen (falls vorhanden) oder motiviere sie gezielt für heute!
+2. Nenne mindestens 3-4 Kinder namentlich aus der Liste oben und beziehe dich auf ihren Nachmittagsunterricht / Unterrichtseinheiten (falls vorhanden) oder motiviere sie gezielt für heute!
 3. Schreibe MINDESTENS 4-5 Sätze. 
 4. Sei extrem herzlich, benutze viele Emojis und stelle sicher, dass jeder Satz grammatikalisch vollständig beendet wird. Brich niemals mitten im Satz ab!`;
 

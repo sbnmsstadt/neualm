@@ -416,30 +416,52 @@
                             style="padding:10px; font-size:0.9rem;">Einstellungen speichern</button>
                     </div>
                 </div>
-                <!-- Badges verwalten (Moved from Sidebar top) -->
+                <!-- Lernzeit & Betreuer -->
+                <div class="glass-card" style="border-color: #3b82f6; margin-top: 15px;">
+                    <h3 style="color: #3b82f6;">✏️ Lernzeit & Betreuung</h3>
+                    
+                    <div class="edit-field">
+                        <label style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">Lernzeit Uhrzeit</label>
+                        <input type="text" id="setting-lernzeit-time" placeholder="14:30 bis 15:20" style="width:100%;">
+                    </div>
+                    
+                    <div style="margin-top:15px; border-top:1px solid var(--glass-border); padding-top:15px;">
+                        <h4 style="margin-bottom:8px; font-size:0.85rem; color:white;">Lernzeit-Lehrer verwalten:</h4>
+                        <div id="lernzeit-teachers-list" style="display:flex; flex-direction:column; gap:10px; margin-bottom:12px;">
+                            <!-- Dynamisch geladen -->
+                        </div>
+                        
+                        <div style="display:flex; gap:8px;">
+                            <input type="text" id="new-teacher-name" placeholder="Name des Lehrers (z.B. Herr Meier)" style="flex:1;">
+                            <button onclick="addLernzeitTeacher()" class="add-stamp-btn" style="background:#3b82f6; padding:8px 12px; font-size:0.8rem; height:38px; margin-top:0;">＋ Hinzufügen</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Nachmittagsunterricht verwalten -->
                 <div class="glass-card" style="border-color: #ec4899; margin-top: 15px;">
-                    <h3 style="color: #ec4899;">🏅 Abzeichen verwalten</h3>
+                    <h3 style="color: #ec4899;">📚 Nachmittagsunterricht</h3>
                     <div id="badge-list"
                         style="display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; min-height: 30px;">
-                        <span style="color: var(--text-muted); font-size: 0.8rem;">Lade Abzeichen...</span>
+                        <span style="color: var(--text-muted); font-size: 0.8rem;">Lade Unterrichtseinheiten...</span>
                     </div>
                     <div
                         style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--glass-border);">
-                        <p style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700;">Neues Abzeichen
+                        <p style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700;">Neue Unterrichtseinheit
                             erstellen:</p>
                         <div style="display: flex; gap: 8px;">
-                            <input type="text" id="new-badge-emoji" placeholder="🏅"
+                            <input type="text" id="new-badge-emoji" placeholder="📚"
                                 style="width: 55px; text-align: center; font-size: 1.2rem;">
-                            <input type="text" id="new-badge-name" placeholder="Name des Abzeichens" style="flex: 1;">
+                            <input type="text" id="new-badge-name" placeholder="Name der Einheit (z.B. Sport-AG)" style="flex: 1;">
                         </div>
-                        <input type="text" id="new-badge-desc" placeholder="Beschreibung (optional)">
+                        <input type="text" id="new-badge-desc" placeholder="Beschreibung / Fach (optional)">
                         <div style="display: flex; gap: 8px; align-items: center;">
                             <label style="font-size: 0.75rem; color: var(--text-muted);">Farbe:</label>
                             <input type="color" id="new-badge-color" value="#f59e0b"
                                 style="width: 40px; height: 30px; border-radius: 6px; border: none; cursor: pointer; background: none;">
                         </div>
                         <button onclick="createBadge()" class="add-stamp-btn"
-                            style="background: #ec4899; padding: 8px; font-size: 0.85rem;">Abzeichen erstellen</button>
+                            style="background: #ec4899; padding: 8px; font-size: 0.85rem;">Einheit erstellen</button>
                     </div>
                     <p id="badge-status-msg" style="font-size: 0.8rem; margin-top: 8px; display: none;"></p>
                 </div>

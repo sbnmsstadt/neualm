@@ -286,8 +286,29 @@ function renderAll() {
     renderAttendance(); // NEW: Today's attendance list
     renderBadgeGalerie();
     renderTamagotchi(); // NEW: Digital Pet logic
+    renderLernzeit(); // NEW: Lernzeit & Betreuung
     checkBirthdayMode();
     checkCelebrationMode(); // NEW: Check for group milestone celebrations
+}
+
+function renderLernzeit() {
+    const lehrerEl = document.getElementById('lernzeit-lehrer');
+    const uhrzeitEl = document.getElementById('lernzeit-uhrzeit');
+    if (!lehrerEl || !uhrzeitEl) return;
+
+    const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+    const todayIndex = new Date().getDay();
+    const todayKey = days[todayIndex];
+
+    const activeTeachers = (settings.lernzeitTeachers || []).filter(t => t.days && t.days[todayKey]);
+
+    if (activeTeachers.length > 0) {
+        lehrerEl.textContent = activeTeachers.map(t => t.name).join(' & ');
+    } else {
+        lehrerEl.textContent = "Keine Angabe";
+    }
+
+    uhrzeitEl.textContent = `${settings.lernzeitTime || "14:30 bis 15:20"} Uhr`;
 }
 
 // ── CELEBRATION MODE ───────────────────────────
@@ -452,7 +473,7 @@ const MOTIVATIONAL_BADGES = [
     { icon: "⚡", name: "High-Speed", desc: "Ich erledige Aufgaben besonders effizient!" },
     { icon: "🧘", name: "Zen-Meister", desc: "Ich bleibe auch bei Trubel entspannt!" },
     { icon: "🔥", name: "Goat", desc: "Ich gebe heute alles für die Gruppe!" },
-    { icon: "🏅", name: "Abzeichen-Tipp", desc: "Zeig dich positiv und hol dir coole Badges!" }
+    { icon: "📚", name: "Unterrichts-Tipp", desc: "Nimm aktiv an deinen Nachmittags-Einheiten teil!" }
 ];
 let badgeIndex = 0;
 
@@ -962,7 +983,7 @@ function buildTickerItems() {
         if (s.badges && s.badges.length > 0) {
             [...s.badges].sort().forEach(bid => {
                 const bDef = badges.find(b => String(b.id) === String(bid));
-                if (bDef) display.push({ name: s.name.split(' ')[0], reason: `Abzeichen "${bDef.name}"`, emoji: bDef.emoji });
+                if (bDef) display.push({ name: s.name.split(' ')[0], reason: `Unterricht: "${bDef.name}"`, emoji: bDef.emoji });
             });
         }
     });
