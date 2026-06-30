@@ -258,7 +258,7 @@ function renderAll() {
     renderUpcomingProjects();
     renderTodayPlan();
     renderDailyNotes();
-    renderVIPs();
+    renderBirthdayWeek();
     renderTicker();
     renderStudentOfWeek();
     renderAttendance(); // NEW: Today's attendance list
@@ -342,19 +342,15 @@ function renderStudentOfWeek() {
 function renderAttendance() {
     const kommenList = document.getElementById('kommen-list');
     const gehenList = document.getElementById('gehen-list');
-    if (!kommenList || !gehenList) return;
+    const abwesendList = document.getElementById('abwesend-list');
+    if (!kommenList || !gehenList || !abwesendList) return;
 
     const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
     const todayIndex = new Date().getDay();
     const todayKey = days[todayIndex];
 
-    const presentStudents = students.filter(s => s.attendance && s.attendance[todayKey]);
-
-    if (presentStudents.length === 0) {
-        smoothUpdate(kommenList, `<div class="empty-state">Heute ist noch keiner da. 🤔</div>`);
-        smoothUpdate(gehenList, `<div class="empty-state">Heute geht noch keiner. 🍿</div>`);
-        return;
-    }
+    const presentStudents = students.filter(s => s.attendance && s.attendance[todayKey] && !s.sick);
+    const absentStudents = students.filter(s => s.sick);
 
     // Sort by comingTime for Kommen
     const sortedKommen = [...presentStudents].sort((a, b) => {
@@ -426,65 +422,165 @@ function renderAttendance() {
         `;
     };
 
-    const kommenHTML = sortedKommen.map(s => createStudentHTML(s, true, true)).join('');
-    const gehenHTML = sortedGehen.map(s => createStudentHTML(s, true, false)).join('');
+    // Render Kommen
+    if (sortedKommen.length === 0) {
+        smoothUpdate(kommenList, `<div class="empty-state">Heute ist noch keiner da. 🤔</div>`);
+    } else {
+        const kommenHTML = sortedKommen.map(s => createStudentHTML(s, true, true)).join('');
+        smoothUpdate(kommenList, kommenHTML);
+    }
 
-    smoothUpdate(kommenList, kommenHTML);
-    smoothUpdate(gehenList, gehenHTML);
+    // Render Gehen
+    if (sortedGehen.length === 0) {
+        smoothUpdate(gehenList, `<div class="empty-state">Heute geht noch keiner. 🍿</div>`);
+    } else {
+        const gehenHTML = sortedGehen.map(s => createStudentHTML(s, true, false)).join('');
+        smoothUpdate(gehenList, gehenHTML);
+    }
+
+    // Render Abwesend
+    if (absentStudents.length === 0) {
+        smoothUpdate(abwesendList, `<div class="empty-state">Keiner krank. 😊</div>`);
+    } else {
+        const absentHTML = absentStudents.map(s => {
+            const avatar = s.avatar || s.name.charAt(0).toUpperCase();
+            const isExcused = s.sick === 'excused';
+            const statusLabel = isExcused ? 'Krank (E)' : 'Krank (U)';
+            const tagStyle = isExcused 
+                ? 'color: #10b981; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.15);' 
+                : 'color: #ef4444; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.15);';
+            
+            return `
+                <div class="attendance-item" style="border-left: 4px solid ${isExcused ? '#10b981' : '#ef4444'};">
+                    <div class="attendance-avatar">${avatar}</div>
+                    <div class="attendance-name">
+                        <span class="attendance-name-text">${s.name.split(' ')[0]}</span>
+                    </div>
+                    <span class="attendance-time-tag" style="${tagStyle}">${statusLabel}</span>
+                </div>
+            `;
+        }).join('');
+        smoothUpdate(abwesendList, absentHTML);
+    }
 }
 
 // ── BADGE GALLERY (Motivation) ─────────────────
-const MOTIVATIONAL_BADGES = [
-    { icon: "🤝", name: "Ehren-Buddy", desc: "Ich helfe anderen ohne Aufforderung!" },
-    { icon: "💎", name: "Vibe-Master", desc: "Ich sorge für gute Stimmung!" },
-    { icon: "🛡️", name: "Fairness-Wächter", desc: "Ich bin fair und ehrlich!" },
-    { icon: "🎨", name: "Pixel-Picasso", desc: "Ich erschaffe kreative Meisterwerke!" },
-    { icon: "🚀", name: "Master-Engineer", desc: "Ich baue die krassesten Konstruktionen!" },
-    { icon: "🧠", name: "Brainiac", desc: "Ich löse jedes Rätsel blitzschnell!" },
-    { icon: "⚡", name: "High-Speed", desc: "Ich erledige Aufgaben besonders effizient!" },
-    { icon: "🧘", name: "Zen-Meister", desc: "Ich bleibe auch bei Trubel entspannt!" },
-    { icon: "🔥", name: "Goat", desc: "Ich gebe heute alles für die Gruppe!" },
-    { icon: "📚", name: "Unterrichts-Tipp", desc: "Nimm aktiv an deinen Nachmittags-Einheiten teil!" }
-];
-let badgeIndex = 0;
-
+// ── BADGE GALLERY (Unterrichtseinheiten) ─────────────────
 function renderBadgeGalerie() {
-    const iconEl = document.getElementById('badge-display-icon');
-    const nameEl = document.getElementById('badge-display-name');
-    const descEl = document.getElementById('badge-display-desc');
-    if (!iconEl || !nameEl || !descEl) return;
+    const el = document.getElementById('badge-galerie-content');
+    if (!el) return;
 
-    // Use actual badges from DB if available, otherwise fallback to defaults
-    const sourceBadges = (badges && badges.length > 0) ? badges : [
-        { emoji: "🤝", name: "Ehren-Buddy", desc: "Ich helfe anderen ohne Aufforderung!" },
-        { emoji: "💎", name: "Vibe-Master", desc: "Ich sorge für gute Stimmung!" },
-        { emoji: "🛡️", name: "Fairness-Wächter", desc: "Ich bin fair und ehrlich!" },
-        { emoji: "🎨", name: "Pixel-Picasso", desc: "Ich erschaffe kreative Meisterwerke!" },
-        { emoji: "🚀", name: "Master-Engineer", desc: "Ich baue die krassesten Konstruktionen!" },
-        { emoji: "🧠", name: "Brainiac", desc: "Ich löse jedes Rätsel blitzschnell!" },
-        { icon: "⚡", name: "High-Speed", desc: "Ich erledige Aufgaben besonders effizient!" },
-        { icon: "🧘", name: "Zen-Meister", desc: "Ich bleibe auch bei Trubel entspannt!" },
-        { icon: "🔥", name: "Goat", desc: "Ich gebe heute alles für die Gruppe!" }
-    ];
+    const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+    const todayIndex = new Date().getDay();
+    const todayKey = days[todayIndex];
+    const dayIdx = todayIndex - 1;
 
-    // Combine with a static tip item
-    const galleryItems = [...sourceBadges, { emoji: "💡", name: "Pro-Tipp", desc: "Hilf anderen und sammle EHRE!" }];
+    // Helper to get badge IDs for a student on the current day
+    const getStudentBadgesForDay = (student, dayKey, idx) => {
+        if (!student || !student.badges) return [];
+        if (Array.isArray(student.badges)) {
+            const val = student.badges[idx];
+            return val ? [String(val)] : [];
+        }
+        if (typeof student.badges === 'object') {
+            const val = student.badges[dayKey];
+            if (Array.isArray(val)) {
+                return val.map(String).filter(id => id !== "");
+            }
+            if (val) {
+                return [String(val)].filter(id => id !== "");
+            }
+        }
+        return [];
+    };
 
-    // Pick next item
-    const item = galleryItems[badgeIndex % galleryItems.length];
-    badgeIndex++;
+    // Map to group students by badge ID
+    const badgeToStudentsMap = {};
 
-    // Smooth update with fade
-    const parent = document.getElementById('badge-refresh-area');
-    if (parent) {
-        parent.style.opacity = '0';
-        setTimeout(() => {
-            iconEl.textContent = item.emoji || item.icon;
-            nameEl.textContent = item.name;
-            descEl.textContent = item.description || item.desc || "-";
-            parent.style.opacity = '1';
-        }, 600);
+    students.forEach(student => {
+        const studentBadgeIds = getStudentBadgesForDay(student, todayKey, dayIdx);
+        studentBadgeIds.forEach(badgeId => {
+            if (!badgeToStudentsMap[badgeId]) {
+                badgeToStudentsMap[badgeId] = [];
+            }
+            if (!badgeToStudentsMap[badgeId].some(s => s.id === student.id)) {
+                badgeToStudentsMap[badgeId].push(student);
+            }
+        });
+    });
+
+    const activeBadgeIds = Object.keys(badgeToStudentsMap);
+
+    if (activeBadgeIds.length === 0) {
+        const emptyHTML = `
+            <div class="empty-state" style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 10px; padding: 30px 0; color: var(--text-muted); width: 100%; height: 100%; min-height: 150px; flex: 1;">
+                <div class="empty-icon" style="font-size: 2.5rem; filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.3)); animation: badgeFloat 3s ease-in-out infinite;">📚</div>
+                <span style="font-size: 0.95rem; font-weight: 700; color: rgba(255,255,255,0.7); line-height: 1.4;">Keine Unterrichtseinheiten<br>für heute eingetragen</span>
+            </div>
+        `;
+        smoothUpdate(el, emptyHTML);
+        return;
     }
+
+    // Sort badges alphabetically by name
+    activeBadgeIds.sort((a, b) => {
+        const badgeA = badges.find(x => String(x.id) === String(a));
+        const badgeB = badges.find(x => String(x.id) === String(b));
+        const nameA = badgeA ? badgeA.name : `Einheit ${a}`;
+        const nameB = badgeB ? badgeB.name : `Einheit ${b}`;
+        return nameA.localeCompare(nameB);
+    });
+
+    let html = '<div style="display: flex; flex-direction: column; gap: 14px; width: 100%;">';
+
+    activeBadgeIds.forEach(badgeId => {
+        const badgeDef = badges.find(b => String(b.id) === String(badgeId));
+        const badge = badgeDef || {
+            emoji: "📚",
+            name: `Einheit ${badgeId}`,
+            description: "",
+            color: "#a78bfa"
+        };
+
+        const categoryColor = badge.color || '#a78bfa';
+        const categoryStudents = badgeToStudentsMap[badgeId];
+        
+        // Sort students alphabetically
+        categoryStudents.sort((a, b) => a.name.localeCompare(b.name));
+
+        const studentsHTML = categoryStudents.map(s => {
+            const avatar = s.avatar || s.name.charAt(0).toUpperCase();
+            return `
+                <div class="ue-student-chip" style="display: flex; align-items: center; gap: 6px; padding: 4px 8px; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; font-size: 0.8rem; font-weight: 700; color: white;">
+                    <div class="ue-student-avatar" style="width: 18px; height: 18px; border-radius: 50%; background: ${categoryColor}22; border: 1px solid ${categoryColor}44; display: flex; align-items: center; justify-content: center; font-size: 0.6rem; color: ${categoryColor}; flex-shrink: 0; font-weight: 800;">
+                        ${avatar}
+                    </div>
+                    <span class="ue-student-name">${s.name.split(' ')[0]}</span>
+                </div>
+            `;
+        }).join('');
+
+        html += `
+            <div class="ue-category" style="width: 100%; text-align: left;">
+                <!-- Category Header -->
+                <div class="ue-category-header" style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid ${categoryColor}33;">
+                    <span class="ue-category-emoji" style="font-size: 1.25rem; filter: drop-shadow(0 0 6px ${categoryColor}55);">${badge.emoji || '📚'}</span>
+                    <div style="display: flex; flex-direction: column; min-width: 0;">
+                        <span class="ue-category-name" style="font-size: 0.9rem; font-weight: 800; color: white; line-height: 1.2;">${badge.name}</span>
+                        ${badge.description || badge.desc ? `<span class="ue-category-desc" style="font-size: 0.68rem; color: ${categoryColor}; opacity: 0.85; font-style: italic; line-height: 1.2; margin-top: 1px;">${badge.description || badge.desc}</span>` : ''}
+                    </div>
+                </div>
+                <!-- Students List -->
+                <div class="ue-students-list" style="display: flex; flex-wrap: wrap; gap: 6px;">
+                    ${studentsHTML}
+                </div>
+            </div>
+        `;
+    });
+
+    html += '</div>';
+
+    smoothUpdate(el, html);
 }
 
 // ── BIRTHDAY MODE ──────────────────────────────
@@ -877,36 +973,79 @@ function renderTodayPlan() {
 }
 
 
-// ── VIP ────────────────────────────────────────
-function renderVIPs() {
-    const el = document.getElementById('vip-list');
-    const vipDuration = settings.vipDurationDays || 3;
+// ── GEBURTSTAGSKIND DER WOCHE ──────────────────
+function renderBirthdayWeek() {
+    const el = document.getElementById('birthday-week-list');
+    if (!el) return;
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    const wDay = today.getDay() || 7;
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - wDay + 1);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    sunday.setHours(23, 59, 59, 999);
 
-    const vips = students.filter(s => s.vip && s.vip.active);
+    const isBirthdayThisWeek = (birthdayStr) => {
+        if (!birthdayStr) return false;
+        const parts = birthdayStr.split('-');
+        if (parts.length < 3) return false;
+        const m = parseInt(parts[1], 10);
+        const d = parseInt(parts[2], 10);
+        
+        const yearsToCheck = [today.getFullYear() - 1, today.getFullYear(), today.getFullYear() + 1];
+        for (const y of yearsToCheck) {
+            const bdate = new Date(y, m - 1, d);
+            if (bdate >= monday && bdate <= sunday) {
+                return true;
+            }
+        }
+        return false;
+    };
 
-    if (vips.length === 0) {
-        el.innerHTML = `<div class="empty-state"><div class="empty-icon">⭐</div><span>Kein aktiver VIP</span></div>`;
+    const bdayKids = students.filter(s => isBirthdayThisWeek(s.birthday));
+
+    if (bdayKids.length === 0) {
+        el.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-icon" style="color: #ec4899; opacity: 0.6;">🎈</div>
+                <span>Kein Geburtstag diese Woche</span>
+            </div>`;
         return;
     }
 
-    el.innerHTML = vips.map(s => {
-        let dayText = '';
-        if (s.vip.grantedAt) {
-            const g = new Date(s.vip.grantedAt);
-            g.setHours(0, 0, 0, 0);
-            const diff = Math.floor((today - g) / 86400000) + 1;
-            const left = vipDuration - diff + 1;
-            dayText = left <= 1 ? '🔴 Letzter Tag!' : `Tag ${diff} / ${vipDuration}`;
+    const daysOfWeekGerman = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
+
+    // Sort birthday kids by their birthday weekday this week
+    const getBdayDateThisWeek = (birthdayStr) => {
+        const parts = birthdayStr.split('-');
+        const m = parseInt(parts[1], 10);
+        const d = parseInt(parts[2], 10);
+        for (const y of [today.getFullYear() - 1, today.getFullYear(), today.getFullYear() + 1]) {
+            const bdate = new Date(y, m - 1, d);
+            if (bdate >= monday && bdate <= sunday) {
+                return bdate;
+            }
         }
+        return new Date();
+    };
+
+    bdayKids.sort((a, b) => {
+        return getBdayDateThisWeek(a.birthday) - getBdayDateThisWeek(b.birthday);
+    });
+
+    el.innerHTML = bdayKids.map(s => {
+        const bdate = getBdayDateThisWeek(s.birthday);
+        const bdayWeekday = daysOfWeekGerman[bdate.getDay()];
+        const avatar = s.avatar || s.name.charAt(0);
         return `
-            <div class="vip-big fade-in">
-                <div class="vip-star">⭐</div>
-                <div class="vip-avatar-big">${s.avatar || s.name.charAt(0)}</div>
-                <div class="vip-info-horizontal">
-                    <div class="vip-name-big">${s.name}</div>
-                    ${dayText ? `<div class="vip-days-big" style="width:fit-content;">${dayText}</div>` : ''}
+            <div class="bday-big fade-in">
+                <div class="bday-cake">🎂</div>
+                <div class="bday-avatar-big">${avatar}</div>
+                <div class="bday-info-horizontal">
+                    <div class="bday-name-big">${s.name}</div>
+                    <div class="bday-days-big">${bdayWeekday}</div>
                 </div>
             </div>`;
     }).join('');
@@ -928,72 +1067,43 @@ let _tickerPos = 0;
 let _tickerRAF = null;
 let _tickerHash = null;
 
-// Build ticker display items from current data
+// Build ticker display items from weeklyNews setting
 function buildTickerItems() {
     const items = [];
-    const cutoff = Date.now() - 72 * 3600 * 1000; // last 3 days
-    students.forEach(s => {
-        (s.history || []).forEach(h => {
-            if (!h.date || !h.reason) return;
-            if (new Date(h.date).getTime() < cutoff) return;
-            items.push({
-                name: s.name.split(' ')[0],
-                reason: h.reason,
-                date: h.date,
-                emoji: h.emoji || '▸'
-            });
-        });
-    });
-    items.sort((a, b) => {
-        const d = new Date(b.date) - new Date(a.date);
-        return d !== 0 ? d : (a.name + a.reason).localeCompare(b.name + b.reason);
-    });
+    if (settings.weeklyNews && settings.weeklyNews.trim()) {
+        const lines = settings.weeklyNews.split('\n').map(l => l.trim()).filter(Boolean);
+        lines.forEach(line => {
+            // Check if the line starts with an emoji using Intl.Segmenter
+            const segmenter = new Intl.Segmenter('en', { granularity: 'grapheme' });
+            const segments = Array.from(segmenter.segment(line));
+            const firstSegment = segments[0]?.segment || "";
+            const isEmoji = /\p{Extended_Pictographic}/u.test(firstSegment);
 
-    const display = items
-        .filter(it => it.reason !== 'Admin-Korrektur' && !it.reason.toLowerCase().includes('entfernt'))
-        .slice(0, 20);
-
-    const stable = [...students].sort((a, b) => a.name.localeCompare(b.name));
-    stable.filter(s => s.vip && s.vip.active).forEach(s => {
-        display.unshift({ name: s.name.split(' ')[0], reason: '⭐ VIP-Status aktiv', emoji: '👑' });
-    });
-    stable.forEach(s => {
-        if (s.badges) {
-            const days = { mon: 'Mo', tue: 'Di', wed: 'Mi', thu: 'Do', fri: 'Fr' };
-            if (Array.isArray(s.badges)) {
-                s.badges.forEach((bid, idx) => {
-                    if (bid) {
-                        const bDef = badges.find(b => String(b.id) === String(bid));
-                        const dayLabel = Object.values(days)[idx] || '';
-                        if (bDef && dayLabel) display.push({ name: s.name.split(' ')[0], reason: `${dayLabel}: "${bDef.name}"`, emoji: bDef.emoji });
-                    }
+            if (isEmoji) {
+                const text = line.substring(firstSegment.length).trim();
+                items.push({
+                    emoji: firstSegment,
+                    text: text || "News"
                 });
-            } else if (typeof s.badges === 'object') {
-                for (const [dayKey, dayLabel] of Object.entries(days)) {
-                    const val = s.badges[dayKey];
-                    const bids = Array.isArray(val) ? val : (val ? [val] : []);
-                    bids.forEach(bid => {
-                        const bDef = badges.find(b => String(b.id) === String(bid));
-                        if (bDef) display.push({ name: s.name.split(' ')[0], reason: `${dayLabel}: "${bDef.name}"`, emoji: bDef.emoji });
-                    });
-                }
+            } else {
+                items.push({
+                    emoji: "📢",
+                    text: line
+                });
             }
-        }
-    });
-    if (display.length === 0) display.push({ name: 'NACHMI', reason: '🌟 Noch keine Aktivitäten', emoji: '📢' });
-    return display;
+        });
+    }
+    if (items.length === 0) {
+        items.push({
+            emoji: "📢",
+            text: "Willkommen in der Nachmittagsbetreuung!"
+        });
+    }
+    return items;
 }
 
 function getTickerHash() {
-    return students.map(s => {
-        const hist = (s.history || []).filter(h => h.date && h.reason && h.reason !== 'Admin-Korrektur' && !h.reason.toLowerCase().includes('entfernt')).map(h => `${h.date}|${h.reason}`).join(',');
-        const badgeHash = s.badges 
-            ? (Array.isArray(s.badges) 
-                ? [...s.badges].sort().join(',') 
-                : Object.entries(s.badges).map(([k, v]) => `${k}:${v}`).sort().join(','))
-            : '';
-        return `${s.id}:${hist}:${(s.vip && s.vip.active) ? 1 : 0}:${badgeHash}`;
-    }).join(';');
+    return settings.weeklyNews || "";
 }
 
 // RAF loop — runs forever, pixel-perfect, no CSS animation involved
@@ -1027,10 +1137,9 @@ function renderTicker() {
     for (let i = 0; i < copies; i++) half.push(...display);
 
     const halfHtml = half.map(it => `
-        <div class="ticker-item" style="font-size:1.15em;">
+        <div class="ticker-item" style="font-size:1.5em;">
             <span class="t-icon">${it.emoji}</span>
-            <span class="t-name">${it.name}</span>
-            <span>${it.reason}</span>
+            <span>${it.text}</span>
         </div>`).join('');
 
     // Two identical halves — _tickerPos modulo halfW keeps the loop invisible

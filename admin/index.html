@@ -143,7 +143,7 @@
                         <div style="display:flex; flex-direction:column; gap:8px;">
                             <p style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; margin: 0;">
                                 KOMMT-ZEIT:</p>
-                            <div style="display:flex; gap:8px; align-items:center;">
+                            <div style="display:flex; flex-direction:column; gap:6px;">
                                 <div class="coming-toggle-container"
                                     style="display:flex; background:rgba(255,255,255,0.05); border-radius:8px; padding:2px; border:1px solid rgba(255,255,255,0.1); width: fit-content;">
                                     <button id="new-coming-btn-1140" type="button" onclick="selectNewComing(this, '11:40')"
@@ -156,16 +156,18 @@
                                         class="coming-btn"
                                         style="border:none; background:none; color:rgba(255,255,255,0.3); font-size:0.7rem; font-weight:800; padding:4px 10px; border-radius:6px; cursor:pointer;">13:30</button>
                                 </div>
-                                <span style="font-size: 0.7rem; color: var(--text-muted);">oder:</span>
-                                <input type="text" id="new-student-coming" value="11:40" placeholder="z.B. 11:40" oninput="clearNewComingButtons()"
-                                    style="width: 80px; text-align: center; padding: 4px 8px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); color: white; font-size: 0.75rem; font-weight: 700;">
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <span style="font-size: 0.7rem; color: var(--text-muted);">oder:</span>
+                                    <input type="text" id="new-student-coming" value="11:40" placeholder="z.B. 11:40" oninput="clearNewComingButtons()"
+                                        style="width: 80px; text-align: center; padding: 4px 8px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); color: white; font-size: 0.75rem; font-weight: 700;">
+                                </div>
                             </div>
                         </div>
 
                         <div style="display:flex; flex-direction:column; gap:8px;">
                             <p style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; margin: 0;">
                                 GEHT-ZEIT:</p>
-                            <div style="display:flex; gap:8px; align-items:center;">
+                            <div style="display:flex; flex-direction:column; gap:6px;">
                                 <div class="pickup-toggle-container"
                                     style="display:flex; background:rgba(255,255,255,0.05); border-radius:8px; padding:2px; border:1px solid rgba(255,255,255,0.1); width: fit-content;">
                                     <button id="new-pickup-btn-1330" type="button" onclick="selectNewPickup(this, '13:30')"
@@ -181,9 +183,11 @@
                                         class="pickup-btn"
                                         style="border:none; background:none; color:rgba(255,255,255,0.3); font-size:0.7rem; font-weight:800; padding:4px 10px; border-radius:6px; cursor:pointer;">16:30</button>
                                 </div>
-                                <span style="font-size: 0.7rem; color: var(--text-muted);">oder:</span>
-                                <input type="text" id="new-student-pickup" value="15:30" placeholder="z.B. 15:30" oninput="clearNewPickupButtons()"
-                                    style="width: 80px; text-align: center; padding: 4px 8px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); color: white; font-size: 0.75rem; font-weight: 700;">
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <span style="font-size: 0.7rem; color: var(--text-muted);">oder:</span>
+                                    <input type="text" id="new-student-pickup" value="15:30" placeholder="z.B. 15:30" oninput="clearNewPickupButtons()"
+                                        style="width: 80px; text-align: center; padding: 4px 8px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); color: white; font-size: 0.75rem; font-weight: 700;">
+                                </div>
                             </div>
                         </div>
 
@@ -274,9 +278,9 @@
                                 style="width:100%; height:80px; font-size:0.85rem; padding:8px; border-radius:10px; border:1px solid var(--glass-border); background:rgba(255,255,255,0.05); color:white; resize:vertical;"></textarea>
                         </div>
                         <div class="edit-field">
-                            <label style="font-size:0.75rem; color:var(--accent); font-weight:700;">Wichtiges für heute
+                            <label style="font-size:0.75rem; color:var(--accent); font-weight:700;">Kommende Projekte
                                 (Infotafel)</label>
-                            <textarea id="setting-daily-notes" placeholder="z.B. Schüler Xy geht um 13:00"
+                            <textarea id="setting-upcoming-projects" placeholder="z.B. Sommerfest planen 🎈"
                                 style="width:100%; height:60px; font-size:0.85rem; padding:8px; border-radius:10px; border:1px solid var(--glass-border); background:rgba(255,255,255,0.05); color:white; resize:vertical;"></textarea>
                         </div>
                         <div class="edit-field">
@@ -292,9 +296,15 @@
                                 style="width:100%; height:80px; font-size:0.85rem; padding:8px; border-radius:10px; border:1px solid var(--glass-border); background:rgba(255,255,255,0.05); color:white; resize:vertical;"></textarea>
                         </div>
                         <div class="edit-field">
-                            <label style="font-size:0.75rem; color:var(--accent); font-weight:700;">Kommende Projekte
+                            <label style="font-size:0.75rem; color:var(--accent); font-weight:700;">Wichtiges für heute
                                 (Infotafel)</label>
-                            <textarea id="setting-upcoming-projects" placeholder="z.B. Sommerfest planen 🎈"
+                            <textarea id="setting-daily-notes" placeholder="z.B. Schüler Xy geht um 13:00"
+                                style="width:100%; height:60px; font-size:0.85rem; padding:8px; border-radius:10px; border:1px solid var(--glass-border); background:rgba(255,255,255,0.05); color:white; resize:vertical;"></textarea>
+                        </div>
+                        <div class="edit-field">
+                            <label style="font-size:0.75rem; color:#a78bfa; font-weight:700;">News der Woche
+                                (Infotafel-Band)</label>
+                            <textarea id="setting-weekly-news" placeholder="z.B. Nächste Woche ist schulfrei! 🪅"
                                 style="width:100%; height:60px; font-size:0.85rem; padding:8px; border-radius:10px; border:1px solid var(--glass-border); background:rgba(255,255,255,0.05); color:white; resize:vertical;"></textarea>
                         </div>
                         <div style="display:flex; gap:10px; align-items:center;">

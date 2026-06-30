@@ -5,6 +5,7 @@ let REWARDS = [];
 let lastStudentsSnapshot = "";
 let currentSettings = null; // Global settings cache
 let lastLoadedValues = {};  // Cache to track what was last put into DOM
+let editingStudentId = null;
 
 const adminApp = document.getElementById('admin-app');
 const loginOverlay = document.getElementById('login-overlay');
@@ -617,153 +618,229 @@ function renderAdminList(filter = "") {
     filtered.forEach(student => {
         const item = document.createElement('div');
         item.className = 'glass-card admin-student-item';
-        const isVip = student.vip && student.vip.active;
-        const fullCards = Math.floor(student.stamps / 20);
-        const vipEligible = fullCards >= 1;
 
-        // Calculate VIP days
-        let vipDayText = '';
-        if (isVip && student.vip.grantedAt) {
-            const grantedDate = new Date(student.vip.grantedAt);
-            grantedDate.setHours(0, 0, 0, 0);
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            const daysDiff = Math.floor((today - grantedDate) / (1000 * 60 * 60 * 24)) + 1;
-            const vipDuration = window._vipDuration || 3;
-            const daysLeft = vipDuration - daysDiff + 1;
-            vipDayText = daysLeft <= 1
-                ? `⭐ VIP — <span style="color:#ff6b6b">Letzter Tag!</span>`
-                : `⭐ VIP — <span style="color:gold">Tag ${daysDiff}/${vipDuration}</span>`;
-        }
+        if (editingStudentId === student.id) {
+            item.classList.add('editing');
+            item.innerHTML = `
+                <div class="edit-student-grid" style="display: flex; flex-direction: column; gap: 12px; padding: 5px 0;">
+                    <div style="font-weight: 700; font-size: 1.1rem; color: var(--primary-light); display: flex; align-items: center; justify-content: space-between;">
+                        <span style="display: flex; align-items: center; gap: 8px;">✏️ Schüler bearbeiten</span>
+                        <span class="subtitle" style="font-size: 0.8rem; font-weight: normal; color: var(--text-muted);">ID: ${student.id}</span>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                        <label style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Name</label>
+                        <input type="text" id="edit-student-name-${student.id}" value="${student.name}" style="padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); color: white; font-size: 1rem; font-weight: 700; width: 100%;">
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                        <label style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Geburtsdatum</label>
+                        <input type="date" id="edit-student-birthday-${student.id}" value="${student.birthday || ''}" style="padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); color: white; font-size: 1rem; font-weight: 700; width: 100%;">
+                    </div>
+                    <div style="display: flex; gap: 8px; margin-top: 8px;">
+                        <button onclick="saveEditStudent('${student.id}')" class="add-stamp-btn" style="flex: 1; padding: 10px; background: var(--success); border: none; color: white; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                            Speichern
+                        </button>
+                        <button onclick="cancelEditStudent()" class="add-stamp-btn" style="flex: 1; padding: 10px; background: rgba(255,255,255,0.1); border: none; color: white; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                            Abbrechen
+                        </button>
+                    </div>
+                </div>
+            `;
+        } else {
+            const isVip = student.vip && student.vip.active;
+            const fullCards = Math.floor(student.stamps / 20);
+            const vipEligible = fullCards >= 1;
 
-        // Badge chips + toggle using data attributes (avoids inline onclick escaping issues)
-        const studentBadges = student.badges || {};
-        const hasBadges = allBadges.length > 0;
-        let badgeSection = '';
-        if (hasBadges) {
-            const days = { mon: 'Mo', tue: 'Di', wed: 'Mi', thu: 'Do', fri: 'Fr' };
-            const getBadgeStyle = (badgeId) => {
-                const b = allBadges.find(x => String(x.id) === String(badgeId));
-                if (b) {
-                    return `background: ${b.color}22; border: 1px solid ${b.color}; color: ${b.color}; font-weight: 800;`;
-                }
-                return `background: rgba(255,255,255,0.03); border: 1px dashed rgba(255,255,255,0.2); color: rgba(255,255,255,0.4);`;
-            };
+            // Calculate VIP days
+            let vipDayText = '';
+            if (isVip && student.vip.grantedAt) {
+                const grantedDate = new Date(student.vip.grantedAt);
+                grantedDate.setHours(0, 0, 0, 0);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const daysDiff = Math.floor((today - grantedDate) / (1000 * 60 * 60 * 24)) + 1;
+                const vipDuration = window._vipDuration || 3;
+                const daysLeft = vipDuration - daysDiff + 1;
+                vipDayText = daysLeft <= 1
+                    ? `⭐ VIP — <span style="color:#ff6b6b">Letzter Tag!</span>`
+                    : `⭐ VIP — <span style="color:gold">Tag ${daysDiff}/${vipDuration}</span>`;
+            }
 
-            const getBadgeIds = (dayKey, dayIdx) => {
-                if (Array.isArray(studentBadges)) {
-                    return studentBadges[dayIdx] ? [studentBadges[dayIdx]] : [];
-                }
-                const val = studentBadges[dayKey];
-                if (Array.isArray(val)) return val;
-                if (val) return [val];
-                return [];
-            };
+            // Badge chips + toggle using data attributes (avoids inline onclick escaping issues)
+            const studentBadges = student.badges || {};
+            const hasBadges = allBadges.length > 0;
+            let badgeSection = '';
+            if (hasBadges) {
+                const days = { mon: 'Mo', tue: 'Di', wed: 'Mi', thu: 'Do', fri: 'Fr' };
+                const getBadgeStyle = (badgeId) => {
+                    const b = allBadges.find(x => String(x.id) === String(badgeId));
+                    if (b) {
+                        return `background: ${b.color}22; border: 1px solid ${b.color}; color: ${b.color}; font-weight: 800;`;
+                    }
+                    return `background: rgba(255,255,255,0.03); border: 1px dashed rgba(255,255,255,0.2); color: rgba(255,255,255,0.4);`;
+                };
 
-            const columns = Object.entries(days).map(([dayKey, dayLabel], dayIdx) => {
-                const dayBadges = getBadgeIds(dayKey, dayIdx);
-                const selects = dayBadges.map((selectedId, idx) => {
-                    const options = allBadges.map(b => `
-                        <option value="${b.id}" ${String(b.id) === String(selectedId) ? 'selected' : ''} style="background: var(--bg-dark); color: white;">
-                            ${b.emoji} ${b.name}
-                        </option>`).join('');
+                const getBadgeIds = (dayKey, dayIdx) => {
+                    if (Array.isArray(studentBadges)) {
+                        return studentBadges[dayIdx] ? [studentBadges[dayIdx]] : [];
+                    }
+                    const val = studentBadges[dayKey];
+                    if (Array.isArray(val)) return val;
+                    if (val) return [val];
+                    return [];
+                };
+
+                const columns = Object.entries(days).map(([dayKey, dayLabel], dayIdx) => {
+                    const dayBadges = getBadgeIds(dayKey, dayIdx);
+                    const selects = dayBadges.map((selectedId, idx) => {
+                        const options = allBadges.map(b => `
+                            <option value="${b.id}" ${String(b.id) === String(selectedId) ? 'selected' : ''} style="background: var(--bg-dark); color: white;">
+                                ${b.emoji} ${b.name}
+                            </option>`).join('');
+
+                        return `
+                            <select onchange="updateStudentWeekdayBadge('${student.id}', '${dayKey}', ${idx}, this.value)" style="
+                                width: 100%; text-align: center; font-size: 0.8rem; border-radius: 8px; padding: 5px 2px; cursor: pointer; -webkit-appearance: none; appearance: none; text-align-last: center; transition: all 0.2s; margin-bottom: 4px;
+                                ${getBadgeStyle(selectedId)}
+                            ">
+                                <option value="" style="background: var(--bg-dark); color: var(--text-muted);">— (Löschen)</option>
+                                ${options}
+                            </select>
+                        `;
+                    }).join('');
 
                     return `
-                        <select onchange="updateStudentWeekdayBadge('${student.id}', '${dayKey}', ${idx}, this.value)" style="
-                            width: 100%; text-align: center; font-size: 0.8rem; border-radius: 8px; padding: 5px 2px; cursor: pointer; -webkit-appearance: none; appearance: none; text-align-last: center; transition: all 0.2s; margin-bottom: 4px;
-                            ${getBadgeStyle(selectedId)}
-                        ">
-                            <option value="" style="background: var(--bg-dark); color: var(--text-muted);">— (Löschen)</option>
-                            ${options}
-                        </select>
+                        <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; min-width: 0;">
+                            <span style="font-size: 0.65rem; font-weight: 900; color: var(--text-muted); text-transform: uppercase;">${dayLabel}</span>
+                            <div style="display: flex; flex-direction: column; width: 100%;">
+                                ${selects}
+                            </div>
+                            <button onclick="addStudentWeekdayBadge('${student.id}', '${dayKey}')" style="
+                                width: 100%; height: 24px; border-radius: 6px; border: 1px dashed rgba(255,255,255,0.15); background: rgba(255,255,255,0.02); color: rgba(255,255,255,0.4); cursor: pointer; font-size: 0.75rem; display: flex; align-items: center; justify-content: center; transition: all 0.2s; margin-top: 2px;
+                            " onmouseover="this.style.background='rgba(255,255,255,0.05)'; this.style.color='white';" onmouseout="this.style.background='rgba(255,255,255,0.02)'; this.style.color='rgba(255,255,255,0.4)';">＋</button>
+                        </div>
                     `;
                 }).join('');
 
-                return `
-                    <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; min-width: 0;">
-                        <span style="font-size: 0.65rem; font-weight: 900; color: var(--text-muted); text-transform: uppercase;">${dayLabel}</span>
-                        <div style="display: flex; flex-direction: column; width: 100%;">
-                            ${selects}
+                badgeSection = `
+                    <div class="badge-row" style="margin-top:12px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.08);">
+                        <div style="display:flex; gap:6px; align-items:flex-start; width: 100%;">
+                            ${columns}
                         </div>
-                        <button onclick="addStudentWeekdayBadge('${student.id}', '${dayKey}')" style="
-                            width: 100%; height: 24px; border-radius: 6px; border: 1px dashed rgba(255,255,255,0.15); background: rgba(255,255,255,0.02); color: rgba(255,255,255,0.4); cursor: pointer; font-size: 0.75rem; display: flex; align-items: center; justify-content: center; transition: all 0.2s; margin-top: 2px;
-                        " onmouseover="this.style.background='rgba(255,255,255,0.05)'; this.style.color='white';" onmouseout="this.style.background='rgba(255,255,255,0.02)'; this.style.color='rgba(255,255,255,0.4)';">＋</button>
-                    </div>
-                `;
-            }).join('');
+                    </div>`;
+            }
 
-            badgeSection = `
-                <div class="badge-row" style="margin-top:12px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.08);">
-                    <div style="display:flex; gap:6px; align-items:flex-start; width: 100%;">
-                        ${columns}
+            item.innerHTML = `
+                <div class="student-info" style="display:flex; align-items:center;">
+                    <div class="avatar" style="${isVip ? 'box-shadow: 0 0 12px gold; border: 2px solid gold;' : ''}">${student.avatar || student.name.charAt(0)}</div>
+                    <div style="flex:1">
+                        <div style="font-weight:700; font-size:1.1rem">${student.name} ${isVip ? `<span style="font-size:0.7rem; font-weight:900; letter-spacing:0.05em;">${vipDayText}</span>` : ''}</div>
+                        <div class="subtitle" style="font-size:0.75rem">ID: ${student.id} · ${fullCards} Karte(n)</div>
                     </div>
-                </div>`;
+                    <!-- Compact Attendance Chips -->
+                    <div class="attendance-chips-container" style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">
+                        <!-- Weekdays Row -->
+                        <div style="display:flex; gap:4px; margin-bottom: 2px;">
+                            ${['mon', 'tue', 'wed', 'thu', 'fri'].map(day => {
+                                const active = student.attendance && student.attendance[day];
+                                const chars = { mon:'M', tue:'D', wed:'M', thu:'D', fri:'F' };
+                                return `<div class="attendance-chip ${active ? 'active' : ''}" onclick="event.stopPropagation(); toggleAttendance('${student.id}', '${day}', ${active})" title="${day.toUpperCase()}">${chars[day]}</div>`;
+                            }).join('')}
+                        </div>
+                        <!-- Kommen Row -->
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <span style="font-size:0.6rem; color:var(--success); font-weight:800; letter-spacing:0.05em; opacity:0.85; width:45px; text-align:right;">KOMMEN:</span>
+                            <div class="coming-toggle-container" style="display:flex; background:rgba(255,255,255,0.05); border-radius:8px; padding:2px; border:1px solid rgba(255,255,255,0.1);">
+                                <button onclick="updateComingTime('${student.id}', '11:40')" class="coming-btn ${student.comingTime === '11:40' ? 'active' : ''}" style="border:none; background:${student.comingTime === '11:40' ? 'var(--success)' : 'none'}; color:${student.comingTime === '11:40' ? 'white' : 'rgba(255,255,255,0.3)'}; font-size:0.6rem; font-weight:800; padding:2px 6px; border-radius:6px; cursor:pointer;">11:40</button>
+                                <button onclick="updateComingTime('${student.id}', '12:35')" class="coming-btn ${student.comingTime === '12:35' ? 'active' : ''}" style="border:none; background:${student.comingTime === '12:35' ? 'var(--success)' : 'none'}; color:${student.comingTime === '12:35' ? 'white' : 'rgba(255,255,255,0.3)'}; font-size:0.6rem; font-weight:800; padding:2px 6px; border-radius:6px; cursor:pointer;">12:35</button>
+                                <button onclick="updateComingTime('${student.id}', '13:30')" class="coming-btn ${student.comingTime === '13:30' ? 'active' : ''}" style="border:none; background:${student.comingTime === '13:30' ? 'var(--success)' : 'none'}; color:${student.comingTime === '13:30' ? 'white' : 'rgba(255,255,255,0.3)'}; font-size:0.6rem; font-weight:800; padding:2px 6px; border-radius:6px; cursor:pointer;">13:30</button>
+                            </div>
+                            <input type="text" class="admin-coming-input" value="${student.comingTime || '11:40'}" onchange="updateComingTime('${student.id}', this.value)" style="width:48px; text-align:center; padding:2px; border-radius:6px; border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.05); color:white; font-size:0.65rem; font-weight:800;" placeholder="11:40">
+                        </div>
+                        <!-- Gehen Row -->
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <span style="font-size:0.6rem; color:var(--primary-light); font-weight:800; letter-spacing:0.05em; opacity:0.85; width:45px; text-align:right;">GEHEN:</span>
+                            <div class="pickup-toggle-container" style="display:flex; background:rgba(255,255,255,0.05); border-radius:8px; padding:2px; border:1px solid rgba(255,255,255,0.1);">
+                                <button onclick="updatePickupTime('${student.id}', '13:30')" class="pickup-btn ${student.pickupTime === '13:30' ? 'active' : ''}" style="border:none; background:${student.pickupTime === '13:30' ? 'var(--primary)' : 'none'}; color:${student.pickupTime === '13:30' ? 'white' : 'rgba(255,255,255,0.3)'}; font-size:0.6rem; font-weight:800; padding:2px 6px; border-radius:6px; cursor:pointer;">13:30</button>
+                                <button onclick="updatePickupTime('${student.id}', '14:30')" class="pickup-btn ${student.pickupTime === '14:30' ? 'active' : ''}" style="border:none; background:${student.pickupTime === '14:30' ? 'var(--primary)' : 'none'}; color:${student.pickupTime === '14:30' ? 'white' : 'rgba(255,255,255,0.3)'}; font-size:0.6rem; font-weight:800; padding:2px 6px; border-radius:6px; cursor:pointer;">14:30</button>
+                                <button onclick="updatePickupTime('${student.id}', '15:30')" class="pickup-btn ${student.pickupTime === '15:30' ? 'active' : ''}" style="border:none; background:${student.pickupTime === '15:30' ? 'var(--primary)' : 'none'}; color:${student.pickupTime === '15:30' ? 'white' : 'rgba(255,255,255,0.3)'}; font-size:0.6rem; font-weight:800; padding:2px 6px; border-radius:6px; cursor:pointer;">15:30</button>
+                                <button onclick="updatePickupTime('${student.id}', '16:30')" class="pickup-btn ${student.pickupTime === '16:30' ? 'active' : ''}" style="border:none; background:${student.pickupTime === '16:30' ? 'var(--primary)' : 'none'}; color:${student.pickupTime === '16:30' ? 'white' : 'rgba(255,255,255,0.3)'}; font-size:0.6rem; font-weight:800; padding:2px 6px; border-radius:6px; cursor:pointer;">16:30</button>
+                            </div>
+                            <input type="text" class="admin-pickup-input" value="${student.pickupTime || '15:30'}" onchange="updatePickupTime('${student.id}', this.value)" style="width:48px; text-align:center; padding:2px; border-radius:6px; border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.05); color:white; font-size:0.65rem; font-weight:800;" placeholder="15:30">
+                        </div>
+                        <!-- Krank Row -->
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <span style="font-size:0.6rem; color:#ec4899; font-weight:800; letter-spacing:0.05em; opacity:0.85; width:45px; text-align:right;">KRANK:</span>
+                            <div class="sick-toggle-container" style="display:flex; background:rgba(255,255,255,0.05); border-radius:8px; padding:2px; border:1px solid rgba(255,255,255,0.1);">
+                                <button onclick="toggleSick('${student.id}', 'excused')" class="sick-btn ${student.sick === 'excused' ? 'active' : ''}" style="border:none; background:${student.sick === 'excused' ? '#10b981' : 'none'}; color:${student.sick === 'excused' ? 'white' : 'rgba(255,255,255,0.3)'}; font-size:0.6rem; font-weight:800; padding:2px 6px; border-radius:6px; cursor:pointer;">Entschuldigt</button>
+                                <button onclick="toggleSick('${student.id}', 'unexcused')" class="sick-btn ${student.sick === 'unexcused' ? 'active' : ''}" style="border:none; background:${student.sick === 'unexcused' ? '#ef4444' : 'none'}; color:${student.sick === 'unexcused' ? 'white' : 'rgba(255,255,255,0.3)'}; font-size:0.6rem; font-weight:800; padding:2px 6px; border-radius:6px; cursor:pointer;">Unentschuldigt</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                ${badgeSection}
+
+                <div class="admin-row-actions">
+                    <div class="admin-stamp-control">
+                        <input type="number" class="admin-stamp-input" value="${student.stamps}" onchange="updateStamps('${student.id}', this.value)">
+                        <span class="subtitle" style="margin-left:8px">Stempel</span>
+                    </div>
+                    
+                    <div class="admin-button-group" style="flex-wrap:wrap; justify-content:flex-end;">
+                        ${vipEligible ? `<button onclick="toggleVip('${student.id}', ${!isVip})" class="icon-btn-small" style="padding:4px 8px; font-size:0.7rem; font-weight:800; ${isVip ? 'color:gold; border-color:gold;' : 'color:var(--text-muted);'}" title="${isVip ? 'VIP entziehen' : 'VIP vergeben'}">
+                            ⭐ ${isVip ? 'VIP' : 'VIP?'}
+                        </button>` : ''}
+                        <button class="icon-btn-small" onclick="Logbook.showHistory('${student.id}')" title="Pädagogisches Archiv / Logbuch" style="color: #22c55e;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        </button>
+                        <button class="icon-btn-small" onclick="startEditStudent('${student.id}')" title="Bearbeiten" style="color: var(--primary-light);">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                        </button>
+                        <button class="icon-btn-small" onclick="copyLink('${student.id}')" title="Link"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></button>
+                        <button class="icon-btn-small" onclick="deleteStudent('${student.id}')" style="color:#ff6b6b"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+                    </div>
+                </div>
+            `;
         }
-
-        item.innerHTML = `
-            <div class="student-info" style="display:flex; align-items:center;">
-                <div class="avatar" style="${isVip ? 'box-shadow: 0 0 12px gold; border: 2px solid gold;' : ''}">${student.avatar || student.name.charAt(0)}</div>
-                <div style="flex:1">
-                    <div style="font-weight:700; font-size:1.1rem">${student.name} ${isVip ? `<span style="font-size:0.7rem; font-weight:900; letter-spacing:0.05em;">${vipDayText}</span>` : ''}</div>
-                    <div class="subtitle" style="font-size:0.75rem">ID: ${student.id} · ${fullCards} Karte(n)</div>
-                </div>
-                <!-- Compact Attendance Chips -->
-                <div class="attendance-chips-container" style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">
-                    <!-- Weekdays Row -->
-                    <div style="display:flex; gap:4px; margin-bottom: 2px;">
-                        ${['mon', 'tue', 'wed', 'thu', 'fri'].map(day => {
-                            const active = student.attendance && student.attendance[day];
-                            const chars = { mon:'M', tue:'D', wed:'M', thu:'D', fri:'F' };
-                            return `<div class="attendance-chip ${active ? 'active' : ''}" onclick="event.stopPropagation(); toggleAttendance('${student.id}', '${day}', ${active})" title="${day.toUpperCase()}">${chars[day]}</div>`;
-                        }).join('')}
-                    </div>
-                    <!-- Kommen Row -->
-                    <div style="display:flex; align-items:center; gap:6px;">
-                        <span style="font-size:0.6rem; color:var(--success); font-weight:800; letter-spacing:0.05em; opacity:0.85; width:45px; text-align:right;">KOMMEN:</span>
-                        <div class="coming-toggle-container" style="display:flex; background:rgba(255,255,255,0.05); border-radius:8px; padding:2px; border:1px solid rgba(255,255,255,0.1);">
-                            <button onclick="updateComingTime('${student.id}', '11:40')" class="coming-btn ${student.comingTime === '11:40' ? 'active' : ''}" style="border:none; background:${student.comingTime === '11:40' ? 'var(--success)' : 'none'}; color:${student.comingTime === '11:40' ? 'white' : 'rgba(255,255,255,0.3)'}; font-size:0.6rem; font-weight:800; padding:2px 6px; border-radius:6px; cursor:pointer;">11:40</button>
-                            <button onclick="updateComingTime('${student.id}', '12:35')" class="coming-btn ${student.comingTime === '12:35' ? 'active' : ''}" style="border:none; background:${student.comingTime === '12:35' ? 'var(--success)' : 'none'}; color:${student.comingTime === '12:35' ? 'white' : 'rgba(255,255,255,0.3)'}; font-size:0.6rem; font-weight:800; padding:2px 6px; border-radius:6px; cursor:pointer;">12:35</button>
-                            <button onclick="updateComingTime('${student.id}', '13:30')" class="coming-btn ${student.comingTime === '13:30' ? 'active' : ''}" style="border:none; background:${student.comingTime === '13:30' ? 'var(--success)' : 'none'}; color:${student.comingTime === '13:30' ? 'white' : 'rgba(255,255,255,0.3)'}; font-size:0.6rem; font-weight:800; padding:2px 6px; border-radius:6px; cursor:pointer;">13:30</button>
-                        </div>
-                        <input type="text" class="admin-coming-input" value="${student.comingTime || '11:40'}" onchange="updateComingTime('${student.id}', this.value)" style="width:48px; text-align:center; padding:2px; border-radius:6px; border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.05); color:white; font-size:0.65rem; font-weight:800;" placeholder="11:40">
-                    </div>
-                    <!-- Gehen Row -->
-                    <div style="display:flex; align-items:center; gap:6px;">
-                        <span style="font-size:0.6rem; color:var(--primary-light); font-weight:800; letter-spacing:0.05em; opacity:0.85; width:45px; text-align:right;">GEHEN:</span>
-                        <div class="pickup-toggle-container" style="display:flex; background:rgba(255,255,255,0.05); border-radius:8px; padding:2px; border:1px solid rgba(255,255,255,0.1);">
-                            <button onclick="updatePickupTime('${student.id}', '13:30')" class="pickup-btn ${student.pickupTime === '13:30' ? 'active' : ''}" style="border:none; background:${student.pickupTime === '13:30' ? 'var(--primary)' : 'none'}; color:${student.pickupTime === '13:30' ? 'white' : 'rgba(255,255,255,0.3)'}; font-size:0.6rem; font-weight:800; padding:2px 6px; border-radius:6px; cursor:pointer;">13:30</button>
-                            <button onclick="updatePickupTime('${student.id}', '14:30')" class="pickup-btn ${student.pickupTime === '14:30' ? 'active' : ''}" style="border:none; background:${student.pickupTime === '14:30' ? 'var(--primary)' : 'none'}; color:${student.pickupTime === '14:30' ? 'white' : 'rgba(255,255,255,0.3)'}; font-size:0.6rem; font-weight:800; padding:2px 6px; border-radius:6px; cursor:pointer;">14:30</button>
-                            <button onclick="updatePickupTime('${student.id}', '15:30')" class="pickup-btn ${student.pickupTime === '15:30' ? 'active' : ''}" style="border:none; background:${student.pickupTime === '15:30' ? 'var(--primary)' : 'none'}; color:${student.pickupTime === '15:30' ? 'white' : 'rgba(255,255,255,0.3)'}; font-size:0.6rem; font-weight:800; padding:2px 6px; border-radius:6px; cursor:pointer;">15:30</button>
-                            <button onclick="updatePickupTime('${student.id}', '16:30')" class="pickup-btn ${student.pickupTime === '16:30' ? 'active' : ''}" style="border:none; background:${student.pickupTime === '16:30' ? 'var(--primary)' : 'none'}; color:${student.pickupTime === '16:30' ? 'white' : 'rgba(255,255,255,0.3)'}; font-size:0.6rem; font-weight:800; padding:2px 6px; border-radius:6px; cursor:pointer;">16:30</button>
-                        </div>
-                        <input type="text" class="admin-pickup-input" value="${student.pickupTime || '15:30'}" onchange="updatePickupTime('${student.id}', this.value)" style="width:48px; text-align:center; padding:2px; border-radius:6px; border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.05); color:white; font-size:0.65rem; font-weight:800;" placeholder="15:30">
-                    </div>
-                </div>
-            </div>
-
-            ${badgeSection}
-
-            <div class="admin-row-actions">
-                <div class="admin-stamp-control">
-                    <input type="number" class="admin-stamp-input" value="${student.stamps}" onchange="updateStamps('${student.id}', this.value)">
-                    <span class="subtitle" style="margin-left:8px">Stempel</span>
-                </div>
-                
-                <div class="admin-button-group" style="flex-wrap:wrap; justify-content:flex-end;">
-                    ${vipEligible ? `<button onclick="toggleVip('${student.id}', ${!isVip})" class="icon-btn-small" style="padding:4px 8px; font-size:0.7rem; font-weight:800; ${isVip ? 'color:gold; border-color:gold;' : 'color:var(--text-muted);'}" title="${isVip ? 'VIP entziehen' : 'VIP vergeben'}">
-                        ⭐ ${isVip ? 'VIP' : 'VIP?'}
-                    </button>` : ''}
-                    <button class="icon-btn-small" onclick="Logbook.showHistory('${student.id}')" title="Pädagogisches Archiv / Logbuch" style="color: #22c55e;">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    </button>
-                    <button class="icon-btn-small" onclick="copyLink('${student.id}')" title="Link"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></button>
-                    <button class="icon-btn-small" onclick="deleteStudent('${student.id}')" style="color:#ff6b6b"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
-                </div>
-            </div>
-        `;
         container.appendChild(item);
     });
     // NOTE: Badge click listener is set up ONCE in DOMContentLoaded — not here.
+}
+
+async function toggleSick(id, status) {
+    const student = window.students.find(x => x.id === id);
+    if (!student) return;
+    
+    // Toggle off if clicking the already active status
+    const newSick = student.sick === status ? null : status;
+    
+    try {
+        await fetch(`${API_URL}/students/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sick: newSick })
+        });
+        
+        student.sick = newSick;
+        
+        // Silent UI update: find the card and update the buttons
+        const container = document.getElementById('admin-student-list');
+        const card = Array.from(container.children).find(el => el.innerHTML.includes(id));
+        if (card) {
+            const btns = card.querySelectorAll('.sick-btn');
+            btns.forEach(btn => {
+                const isExcused = btn.innerText === 'Entschuldigt';
+                const btnStatus = isExcused ? 'excused' : 'unexcused';
+                const isActive = newSick === btnStatus;
+                
+                btn.classList.toggle('active', isActive);
+                btn.style.color = isActive ? 'white' : 'rgba(255,255,255,0.3)';
+                btn.style.background = isActive ? (btnStatus === 'excused' ? '#10b981' : '#ef4444') : 'none';
+            });
+        }
+    } catch (err) {
+        console.error("Sick status update error:", err);
+    }
 }
 
 async function toggleStudentBadge(studentId, badgeId) {
@@ -1146,6 +1223,7 @@ async function loadSettings() {
             window._vipDuration = settings.vipDurationDays || 3;
 
             updateField('setting-daily-notes', settings.dailyNotes || "");
+            updateField('setting-weekly-news', settings.weeklyNews || "");
             updateField('setting-current-projects', settings.currentProjects || "");
             updateField('setting-upcoming-projects', settings.upcomingProjects || "");
             updateField('setting-today-plan', settings.todayPlan || "");
@@ -1164,6 +1242,7 @@ async function saveSettings() {
 
     const activitiesText = document.getElementById('setting-activities').value;
     const dailyNotes = document.getElementById('setting-daily-notes')?.value || "";
+    const weeklyNews = document.getElementById('setting-weekly-news')?.value || "";
     const currentProjects = document.getElementById('setting-current-projects')?.value || "";
     const upcomingProjects = document.getElementById('setting-upcoming-projects')?.value || "";
     const todayPlan = document.getElementById('setting-today-plan')?.value || "";
@@ -1216,6 +1295,7 @@ async function saveSettings() {
             activities: activities,
             vipDurationDays: vipDuration,
             dailyNotes: dailyNotes,
+            weeklyNews: weeklyNews,
             currentProjects: currentProjects,
             upcomingProjects: upcomingProjects,
             todayPlan: todayPlan,
@@ -1491,3 +1571,47 @@ async function saveLernzeitSettings() {
         console.error("Fehler beim Speichern der Lernzeit-Einstellungen:", err);
     }
 }
+
+// ── STUDENT EDITING FUNCTIONS ──
+function startEditStudent(id) {
+    editingStudentId = id;
+    renderAdminList(document.getElementById('search-students')?.value.toLowerCase() || '');
+}
+
+function cancelEditStudent() {
+    editingStudentId = null;
+    renderAdminList(document.getElementById('search-students')?.value.toLowerCase() || '');
+}
+
+async function saveEditStudent(id) {
+    const nameInput = document.getElementById(`edit-student-name-${id}`);
+    const birthdayInput = document.getElementById(`edit-student-birthday-${id}`);
+    
+    if (!nameInput) return;
+    
+    const name = nameInput.value.trim();
+    const birthday = birthdayInput ? birthdayInput.value : '';
+    
+    if (!name) {
+        alert("Bitte einen Namen eintragen.");
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_URL}/students/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, birthday })
+        });
+        
+        if (response.ok) {
+            editingStudentId = null;
+            await fetchStudents();
+        } else {
+            alert("Fehler beim Speichern der Änderungen.");
+        }
+    } catch (err) {
+        alert("Verbindungsfehler: " + err.message);
+    }
+}
+

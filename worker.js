@@ -652,12 +652,16 @@ export default {
                 if (pathParts.length === 4) {
                     const id = pathParts[3];
                     const body = await request.json();
-                    const { stamps, avatar, badges, reason, attendance, pickupTime, comingTime } = body;
+                    const { stamps, avatar, badges, reason, attendance, pickupTime, comingTime, name, birthday, sick } = body;
                     const studentsRaw = await getKV("students");
                     let students = JSON.parse(studentsRaw || "[]");
 
                     const index = students.findIndex(s => String(s.id) === String(id));
                     if (index === -1) return new Response("Not Found", { status: 404, headers: corsHeaders });
+
+                    if (name !== undefined) students[index].name = name;
+                    if (birthday !== undefined) students[index].birthday = birthday;
+                    if (sick !== undefined) students[index].sick = sick;
 
                     // Migration / Initialization
                     if (students[index].avatar === undefined) students[index].avatar = null;
