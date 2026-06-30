@@ -16,6 +16,17 @@ async function putKV(env, key, value, options = {}) {
     await env.DB.prepare("INSERT OR REPLACE INTO kv_data (id, value) VALUES (?, ?)").bind(key, value).run();
 }
 
+function getLocalDateString() {
+    const d = new Date();
+    const formatter = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Europe/Vienna',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+    });
+    return formatter.format(d); // Returns YYYY-MM-DD
+}
+
 export default {
     async fetch(request, env) {
         // ── WEATHER SYNC HELPER (Hallein: 47.68, 13.17) ──────────────────
@@ -43,6 +54,25 @@ export default {
                     await env.DATABASE.put(key, value, options);
                 } catch (e) { console.error("KV write failed:", e); }
             }
+        }
+
+        async function checkAndResetDay(students, settings) {
+            const todayStr = getLocalDateString();
+            if (settings.lastActiveDay !== todayStr) {
+                let changed = false;
+                students.forEach(s => {
+                    if (s.sick !== null && s.sick !== undefined) {
+                        s.sick = null;
+                        changed = true;
+                    }
+                });
+                settings.lastActiveDay = todayStr;
+                await putKV("settings", JSON.stringify(settings));
+                if (changed) {
+                    await putKV("students", JSON.stringify(students));
+                }
+            }
+            return { students, settings };
         }
 
 
@@ -193,9 +223,16 @@ export default {
                     getKV("settings"),
                     getKV("rewards")
                 ]);
+                let students = JSON.parse(studentsRaw || "[]");
+                let settings = JSON.parse(settingsRaw || "{}");
+
+                const res = await checkAndResetDay(students, settings);
+                students = res.students;
+                settings = res.settings;
+
                 return new Response(JSON.stringify({
-                    students: JSON.parse(studentsRaw || "[]"),
-                    settings: JSON.parse(settingsRaw || "{}"),
+                    students,
+                    settings,
                     rewards: parseRewards(rewardsRaw)
                 }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
             }
@@ -229,9 +266,16 @@ export default {
                     getKV("events"),
                     getKV("badges")
                 ]);
+                let students = JSON.parse(studentsRaw || "[]");
+                let settings = JSON.parse(settingsRaw || "{}");
+
+                const res = await checkAndResetDay(students, settings);
+                students = res.students;
+                settings = res.settings;
+
                 return new Response(JSON.stringify({
-                    students: JSON.parse(studentsRaw || "[]"),
-                    settings: JSON.parse(settingsRaw || "{}"),
+                    students,
+                    settings,
                     rewards: parseRewards(rewardsRaw),
                     appointments: JSON.parse(appointmentsRaw || "[]"),
                     badges: JSON.parse(badgesRaw || "[]")
@@ -247,8 +291,13 @@ export default {
                     getKV("badges")
                 ]);
 
-                const students = JSON.parse(studentsRaw || "[]");
-                const settings = JSON.parse(settingsRaw || "{}");
+                let students = JSON.parse(studentsRaw || "[]");
+                let settings = JSON.parse(settingsRaw || "{}");
+
+                const res = await checkAndResetDay(students, settings);
+                students = res.students;
+                settings = res.settings;
+
                 const student = id ? students.find(s => s.id === id.toLowerCase()) : null;
 
                 // Optimization: Calculate community total here
