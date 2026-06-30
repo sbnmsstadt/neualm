@@ -618,6 +618,7 @@ function renderAdminList(filter = "") {
     filtered.forEach(student => {
         const item = document.createElement('div');
         item.className = 'glass-card admin-student-item';
+        item.setAttribute('data-student-id', student.id);
 
         if (editingStudentId === student.id) {
             item.classList.add('editing');
@@ -824,8 +825,7 @@ async function toggleSick(id, status) {
         student.sick = newSick;
         
         // Silent UI update: find the card and update the buttons
-        const container = document.getElementById('admin-student-list');
-        const card = Array.from(container.children).find(el => el.innerHTML.includes(id));
+        const card = document.querySelector(`.admin-student-item[data-student-id="${id}"]`);
         if (card) {
             const btns = card.querySelectorAll('.sick-btn');
             btns.forEach(btn => {
@@ -1056,8 +1056,7 @@ async function updateStamps(id, c) {
 async function toggleAttendance(id, day, currentVal) {
     const newVal = !currentVal;
     
-    const container = document.getElementById('admin-student-list');
-    const studentCard = Array.from(container.children).find(el => el.innerHTML.includes(id));
+    const studentCard = document.querySelector(`.admin-student-item[data-student-id="${id}"]`);
     if (studentCard) {
         const chips = studentCard.querySelectorAll('.attendance-chip');
         const dayIdx = ['mon', 'tue', 'wed', 'thu', 'fri'].indexOf(day);
@@ -1107,8 +1106,7 @@ async function updateComingTime(id, time) {
         }
 
         // Silent UI update: find the card and update both buttons and the text input
-        const container = document.getElementById('admin-student-list');
-        const card = Array.from(container.children).find(el => el.innerHTML.includes(id));
+        const card = document.querySelector(`.admin-student-item[data-student-id="${id}"]`);
         if (card) {
             const btns = card.querySelectorAll('.coming-btn');
             btns.forEach(btn => {
@@ -1142,8 +1140,7 @@ async function updatePickupTime(id, time) {
         }
 
         // Silent UI update: find the card and update both buttons and the text input
-        const container = document.getElementById('admin-student-list');
-        const card = Array.from(container.children).find(el => el.innerHTML.includes(id));
+        const card = document.querySelector(`.admin-student-item[data-student-id="${id}"]`);
         if (card) {
             const btns = card.querySelectorAll('.pickup-btn');
             btns.forEach(btn => {
