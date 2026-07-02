@@ -565,7 +565,8 @@ export default {
                     emoji: body.emoji || "📚",
                     name: body.name || "Unterrichtseinheit",
                     description: body.description || "",
-                    color: body.color || "#f59e0b"
+                    color: body.color || "#f59e0b",
+                    time: body.time || ""
                 };
                 badges.push(newBadge);
                 await putKV("badges", JSON.stringify(badges));

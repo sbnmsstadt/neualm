@@ -384,12 +384,15 @@
                                 style="width: 55px; text-align: center; font-size: 1.2rem;">
                             <input type="text" id="new-badge-name" placeholder="Name der Einheit (z.B. Sport-AG)" style="flex: 1;">
                         </div>
-                        <input type="text" id="new-badge-desc" placeholder="Beschreibung / Fach (optional)">
-                        <div style="display: flex; gap: 8px; align-items: center;">
-                            <label style="font-size: 0.75rem; color: var(--text-muted);">Farbe:</label>
-                            <input type="color" id="new-badge-color" value="#f59e0b"
-                                style="width: 40px; height: 30px; border-radius: 6px; border: none; cursor: pointer; background: none;">
+                        <div style="display: flex; gap: 8px;">
+                            <input type="text" id="new-badge-time" placeholder="Uhrzeit (z.B. 13:30)" style="flex: 1;">
+                            <div style="display: flex; gap: 8px; align-items: center; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 4px 10px;">
+                                <label style="font-size: 0.75rem; color: var(--text-muted);">Farbe:</label>
+                                <input type="color" id="new-badge-color" value="#f59e0b"
+                                    style="width: 40px; height: 30px; border-radius: 6px; border: none; cursor: pointer; background: none; padding: 0;">
+                            </div>
                         </div>
+                        <input type="text" id="new-badge-desc" placeholder="Beschreibung / Fach (optional)">
                         <button onclick="createBadge()" class="add-stamp-btn"
                             style="background: #ec4899; padding: 8px; font-size: 0.85rem;">Einheit erstellen</button>
                     </div>

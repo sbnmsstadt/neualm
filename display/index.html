@@ -2413,7 +2413,7 @@
                         <div class="card-title">GEHEN</div>
                     </div>
                     <div class="card-content" style="flex: 1; padding: 10px 0; overflow: hidden;">
-                        <div id="gehen-list" class="attendance-content">
+                        <div id="gehen-list" style="display: flex; flex-direction: column; gap: 16px; padding: 5px 15px; height: 100%; overflow-y: auto; scrollbar-width: none;">
                             Keiner geht? 🤔
                         </div>
                     </div>
@@ -2427,14 +2427,14 @@
         <div class="right-col">
             <div class="right-col-spacer"></div>
             <div class="card bday-card" id="bday-card"
-                style="border-color: rgba(236, 72, 153, 0.3); background: rgba(236, 72, 153, 0.03); flex: 0 0 auto; padding: 12px 18px; width: 100%;">
+                style="border-color: rgba(236, 72, 153, 0.3); background: rgba(236, 72, 153, 0.03); flex: 1; padding: 12px 18px; width: 100%; display: flex; flex-direction: column;">
                 <div class="card-header"
                     style="padding-bottom: 8px; border-bottom: 1px solid rgba(236, 72, 153, 0.1); margin-bottom: 5px; justify-content: center; gap: 8px;">
                     <div class="card-icon" style="font-size: 1.1rem;">🎂</div>
                     <div class="card-title" style="color: #f9a8d4; font-size: 0.85rem; text-align: center;">GEBURTSTAGSKIND DER WOCHE</div>
                 </div>
                 <div class="card-content" id="birthday-week-list"
-                    style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 5px 0; position: relative; min-height: 75px;">
+                    style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 5px 0; position: relative; min-height: 75px; flex: 1;">
                     <div class="empty-state">
                         <div class="empty-icon" style="color: #ec4899; opacity: 0.6;">🎈</div><span>Kein Geburtstag diese Woche</span>
                     </div>
@@ -2443,7 +2443,7 @@
 
             <!-- Unterrichts-Galerie (Motivation) -->
             <div class="card badge-galerie-card" id="badge-galerie-card"
-                style="border-color: rgba(139, 92, 246, 0.3); background: rgba(139, 92, 246, 0.03); flex: 1; padding: 12px 18px; min-height: 0; display: flex; flex-direction: column;">
+                style="border-color: rgba(139, 92, 246, 0.3); background: rgba(139, 92, 246, 0.03); flex: 1; padding: 12px 18px; min-height: 0; display: none; flex-direction: column;">
                 <div class="card-header"
                     style="padding-bottom: 8px; border-bottom: 1px solid rgba(139, 92, 246, 0.1); margin-bottom: 5px;">
                     <div class="card-icon" style="font-size: 1.1rem;">📚</div>

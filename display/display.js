@@ -262,7 +262,7 @@ function renderAll() {
     renderTicker();
     renderStudentOfWeek();
     renderAttendance(); // NEW: Today's attendance list
-    renderBadgeGalerie();
+    // renderBadgeGalerie();
 
     renderLernzeit(); // NEW: Lernzeit & Betreuung
     checkBirthdayMode();
@@ -359,12 +359,25 @@ function renderAttendance() {
         return timeA.localeCompare(timeB) || a.name.localeCompare(b.name);
     });
 
-    // Sort by pickupTime for Gehen
-    const sortedGehen = [...presentStudents].sort((a, b) => {
-        const timeA = a.pickupTime || '15:30';
-        const timeB = b.pickupTime || '15:30';
-        return timeA.localeCompare(timeB) || a.name.localeCompare(b.name);
-    });
+    const dayIdx = todayIndex - 1;
+
+    const getStudentBadgesForDay = (student, dayKey, idx) => {
+        if (!student || !student.badges) return [];
+        if (Array.isArray(student.badges)) {
+            const val = student.badges[idx];
+            return val ? [String(val)] : [];
+        }
+        if (typeof student.badges === 'object') {
+            const val = student.badges[dayKey];
+            if (Array.isArray(val)) {
+                return val.map(String).filter(id => id !== "");
+            }
+            if (val) {
+                return [String(val)].filter(id => id !== "");
+            }
+        }
+        return [];
+    };
 
     const createStudentHTML = (s, showTimeTag = true, isComing = false) => {
         const avatar = s.avatar || s.name.charAt(0).toUpperCase();
@@ -430,11 +443,159 @@ function renderAttendance() {
         smoothUpdate(kommenList, kommenHTML);
     }
 
-    // Render Gehen
-    if (sortedGehen.length === 0) {
+    // Render Grouped Chronological Gehen
+    const timeGroups = {};
+
+    presentStudents.forEach(s => {
+        const studentBadgeIds = getStudentBadgesForDay(s, todayKey, dayIdx);
+        
+        if (studentBadgeIds.length > 0) {
+            studentBadgeIds.forEach(badgeId => {
+                const badgeDef = badges.find(b => String(b.id) === String(badgeId));
+                if (badgeDef) {
+                    const time = (badgeDef.time && badgeDef.time.trim()) || s.pickupTime || '15:30';
+                    if (!timeGroups[time]) {
+                        timeGroups[time] = { time, categories: {} };
+                    }
+                    if (!timeGroups[time].categories[badgeId]) {
+                        timeGroups[time].categories[badgeId] = {
+                            type: 'badge',
+                            badge: badgeDef,
+                            students: []
+                        };
+                    }
+                    if (!timeGroups[time].categories[badgeId].students.some(x => x.id === s.id)) {
+                        timeGroups[time].categories[badgeId].students.push(s);
+                    }
+                } else {
+                    const time = s.pickupTime || '15:30';
+                    if (!timeGroups[time]) {
+                        timeGroups[time] = { time, categories: {} };
+                    }
+                    if (!timeGroups[time].categories['heimgehen']) {
+                        timeGroups[time].categories['heimgehen'] = {
+                            type: 'heimgehen',
+                            name: 'Heimgehen',
+                            emoji: '🏠',
+                            color: '#a78bfa',
+                            students: []
+                        };
+                    }
+                    if (!timeGroups[time].categories['heimgehen'].students.some(x => x.id === s.id)) {
+                        timeGroups[time].categories['heimgehen'].students.push(s);
+                    }
+                }
+            });
+        } else {
+            const time = s.pickupTime || '15:30';
+            if (!timeGroups[time]) {
+                timeGroups[time] = { time, categories: {} };
+            }
+            if (!timeGroups[time].categories['heimgehen']) {
+                timeGroups[time].categories['heimgehen'] = {
+                    type: 'heimgehen',
+                    name: 'Heimgehen',
+                    emoji: '🏠',
+                    color: '#a78bfa',
+                    students: []
+                };
+            }
+            if (!timeGroups[time].categories['heimgehen'].students.some(x => x.id === s.id)) {
+                timeGroups[time].categories['heimgehen'].students.push(s);
+            }
+        }
+    });
+
+    const sortedTimes = Object.keys(timeGroups).sort((a, b) => a.localeCompare(b));
+
+    if (sortedTimes.length === 0) {
         smoothUpdate(gehenList, `<div class="empty-state">Heute geht noch keiner. 🍿</div>`);
     } else {
-        const gehenHTML = sortedGehen.map(s => createStudentHTML(s, true, false)).join('');
+        let gehenHTML = '';
+
+        sortedTimes.forEach(time => {
+            const group = timeGroups[time];
+            const categoryKeys = Object.keys(group.categories);
+            const isOnlyHeimgehen = categoryKeys.length === 1 && categoryKeys[0] === 'heimgehen';
+
+            let categoriesHTML = '';
+
+            if (isOnlyHeimgehen) {
+                const cats = group.categories['heimgehen'];
+                cats.students.sort((a, b) => a.name.localeCompare(b.name));
+                
+                const studentsHTML = cats.students.map(s => {
+                    const avatar = s.avatar || s.name.charAt(0).toUpperCase();
+                    return `
+                        <div class="ue-student-chip" style="display: flex; align-items: center; gap: 6px; padding: 4px 8px; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; font-size: 0.8rem; font-weight: 700; color: white;">
+                            <div class="ue-student-avatar" style="width: 18px; height: 18px; border-radius: 50%; background: rgba(167, 139, 250, 0.15); border: 1px solid rgba(167, 139, 250, 0.3); display: flex; align-items: center; justify-content: center; font-size: 0.6rem; color: #a78bfa; flex-shrink: 0; font-weight: 800;">
+                                ${avatar}
+                            </div>
+                            <span class="ue-student-name">${s.name.split(' ')[0]}</span>
+                        </div>
+                    `;
+                }).join('');
+
+                categoriesHTML = `
+                    <div class="gehen-students-list" style="display: flex; flex-wrap: wrap; gap: 6px;">
+                        ${studentsHTML}
+                    </div>
+                `;
+            } else {
+                categoryKeys.sort((a, b) => {
+                    if (a === 'heimgehen') return 1;
+                    if (b === 'heimgehen') return -1;
+                    const nameA = group.categories[a].badge?.name || '';
+                    const nameB = group.categories[b].badge?.name || '';
+                    return nameA.localeCompare(nameB);
+                });
+
+                categoriesHTML = categoryKeys.map(catKey => {
+                    const cat = group.categories[catKey];
+                    cat.students.sort((a, b) => a.name.localeCompare(b.name));
+                    
+                    const emoji = cat.type === 'badge' ? (cat.badge.emoji || '📚') : (cat.emoji || '🏠');
+                    const name = cat.type === 'badge' ? cat.badge.name : cat.name;
+                    const color = cat.type === 'badge' ? (cat.badge.color || '#a78bfa') : (cat.color || '#a78bfa');
+
+                    const studentsHTML = cat.students.map(s => {
+                        const avatar = s.avatar || s.name.charAt(0).toUpperCase();
+                        return `
+                            <div class="ue-student-chip" style="display: flex; align-items: center; gap: 6px; padding: 4px 8px; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; font-size: 0.8rem; font-weight: 700; color: white;">
+                                <div class="ue-student-avatar" style="width: 18px; height: 18px; border-radius: 50%; background: ${color}22; border: 1px solid ${color}44; display: flex; align-items: center; justify-content: center; font-size: 0.6rem; color: ${color}; flex-shrink: 0; font-weight: 800;">
+                                    ${avatar}
+                                </div>
+                                <span class="ue-student-name">${s.name.split(' ')[0]}</span>
+                            </div>
+                        `;
+                    }).join('');
+
+                    return `
+                        <div class="gehen-category-group" style="width: 100%;">
+                            <div class="gehen-category-header" style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; font-weight: 800; color: ${color}; margin-bottom: 6px; border-bottom: 1px solid ${color}33; padding-bottom: 2px;">
+                                <span>${emoji}</span>
+                                <span>${name}</span>
+                            </div>
+                            <div class="gehen-students-list" style="display: flex; flex-wrap: wrap; gap: 6px;">
+                                ${studentsHTML}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            gehenHTML += `
+                <div class="gehen-time-section" style="break-inside: avoid; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px;">
+                    <div class="gehen-time-header" style="display: flex; align-items: center;">
+                        <span style="font-size: 0.85rem; font-weight: 900; color: #ff6b6b; background: rgba(255, 107, 107, 0.1); border: 1px solid rgba(255, 107, 107, 0.25); padding: 2px 8px; border-radius: 20px; font-variant-numeric: tabular-nums;">
+                            🕒 ${time}
+                        </span>
+                    </div>
+                    ${categoriesHTML}
+                </div>
+            `;
+        });
+
         smoothUpdate(gehenList, gehenHTML);
     }
 

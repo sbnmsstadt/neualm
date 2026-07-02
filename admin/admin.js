@@ -1362,7 +1362,7 @@ function renderBadgeList() {
     el.innerHTML = allBadges.map(b => `
         <div style="display:inline-flex;align-items:center;gap:6px;padding:5px 10px;background:${b.color}22;border:1px solid ${b.color};border-radius:20px;font-size:0.8rem;">
             <span>${b.emoji}</span>
-            <span style="font-weight:700;color:${b.color};">${b.name}</span>
+            <span style="font-weight:700;color:${b.color};">${b.name}${b.time ? ` (${b.time})` : ''}</span>
             <button onclick="deleteBadge('${b.id}')" style="background:transparent;border:none;color:#ef4444;cursor:pointer;padding:0;font-size:0.85rem;line-height:1;">✕</button>
         </div>`).join('');
 }
@@ -1372,6 +1372,7 @@ async function createBadge() {
     const name = document.getElementById('new-badge-name').value.trim();
     const desc = document.getElementById('new-badge-desc').value.trim();
     const color = document.getElementById('new-badge-color').value;
+    const time = document.getElementById('new-badge-time').value.trim();
     const msg = document.getElementById('badge-status-msg');
 
     if (!name) { alert('Bitte einen Namen eingeben!'); return; }
@@ -1379,12 +1380,13 @@ async function createBadge() {
         const res = await fetch(`${API_URL}/badges`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ emoji, name, description: desc, color })
+            body: JSON.stringify({ emoji, name, description: desc, color, time })
         });
         if (res.ok) {
             document.getElementById('new-badge-emoji').value = '';
             document.getElementById('new-badge-name').value = '';
             document.getElementById('new-badge-desc').value = '';
+            document.getElementById('new-badge-time').value = '';
             msg.textContent = `✅ "${name}" erstellt!`;
             msg.style.display = 'block';
             msg.style.color = 'var(--success)';
